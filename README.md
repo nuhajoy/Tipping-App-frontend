@@ -1,1 +1,1 @@
-# Tipping-App-front-end
+# Tipping-App-frontend
