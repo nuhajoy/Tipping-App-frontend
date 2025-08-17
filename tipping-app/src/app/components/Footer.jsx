@@ -6,11 +6,11 @@ export default function Footer() {
   return (
     <footer
       style={{ backgroundColor: "rgba(45, 55, 72)" }}
-      className="px-30 py-10 mt-12 mb-10 text-sm "
+      className="px-30 py-17 mt-12 mb-0 text-sm "
     >
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-5">
+      <div className="mt-0 py-0 flex flex-col md:flex-row justify-between items-start md:items-center gap-5 ">
         <div>
-          <h2 className="text-lg font-bold text-white">TipTop</h2>
+          <h2 className="text-lg font-bold text-white ">TipTop</h2>
           <p className="mt-2 max-w-sm text-gray font-light">
             Revolutionizing the tipping experience for service industries across
             Ethiopia.
@@ -46,6 +46,15 @@ export default function Footer() {
             </ul>
           </div>
         </div>
+      </div>
+      <div
+        py-6
+        className="border-t border-gray-700 mt-8 text-center text-blue-400"
+      >
+        <hr />
+      </div>
+      <div className=" py-12 text-center text-sm text-white-500">
+        © {new Date().getFullYear()} TipTop. All rights reserved.
       </div>
     </footer>
   );
