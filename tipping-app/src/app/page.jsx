@@ -7,7 +7,7 @@ export default function LandingPage() {
     <main className="min-h-screen flex flex-col">
       <Header />
 
-      <section className="text-center py-20 bg-gradient-to-br from-[#DD8849] via-[#B76D36] to-[#925224] text-white">
+      <section className="text-center py-30 bg-gradient-to-br from-[#DD8849] via-[#B76D36] to-[#925224] text-white">
         <h1 className="text-4xl font-bold mb-4">
           Revolutionized Tipping for Businesses
         </h1>
