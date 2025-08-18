@@ -34,7 +34,7 @@
 | Layer            | Technology |
 |-----------------|------------|
 | Web Frontend     | Next.js |
-| Backend (API)    | Laravel, MySQL |
+| Backend    | Laravel, MySQL |
 | Mobile App       | Flutter |
 | Payment Gateway  | Chapa API |
 
