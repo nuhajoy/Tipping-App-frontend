@@ -9,7 +9,7 @@ export default function Header() {
         
         <span className="text-xl font-bold text-black ">TipTop</span>
       </div>
-      <nav className="flex gap-6 text-sm font-medium text-gray-700">
+      <nav className="flex gap-6 text-sm font-medium text-amber-800">
         <Link href="/auth/signup">Register your business</Link>
         <Link href="/auth/login">Login</Link>
         <Link href="/send-tip">Send a Tip</Link>
