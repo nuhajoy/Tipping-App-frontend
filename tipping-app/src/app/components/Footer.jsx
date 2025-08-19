@@ -48,8 +48,8 @@ export default function Footer() {
         </div>
       </div>
       <div
-        py-6
-        className="border-t border-gray-700 mt-8 text-center text-blue-400"
+        
+        className=" py-6 border-t border-gray-700 mt-8 text-center text-blue-400"
       >
         <hr />
       </div>
