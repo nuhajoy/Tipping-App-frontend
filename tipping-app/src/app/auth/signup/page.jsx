@@ -47,7 +47,7 @@ export default function Signup() {
 
     localStorage.setItem("serviceProvider", JSON.stringify(formData));
     toast.success("Registration successful! 🎉");
-    router.push("/dashboard/provider");
+    router.push("/auth/login");
   };
 
   return (
