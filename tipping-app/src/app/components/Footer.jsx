@@ -7,7 +7,7 @@ export default function Footer() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-10">
         {/* Brand Info */}
         <div>
-          <h2 className="text-xl font-bold text-[#00C853]">TipTop</h2>
+          <h2 className="text-xl font-bold text-[#71FF71]">TipTop</h2>
           <p className="mt-2 max-w-sm text-[#666]">
             Revolutionizing the tipping experience for service industries across
             Ethiopia.
@@ -22,7 +22,7 @@ export default function Footer() {
               <li>
                 <Link
                   href="/how-it-works"
-                  className="hover:text-[#00C853] transition-colors"
+                  className="hover:text-[#71FF71] transition-colors"
                 >
                   How it works
                 </Link>
@@ -30,7 +30,7 @@ export default function Footer() {
               <li>
                 <Link
                   href="/send-tip"
-                  className="hover:text-[#00C853] transition-colors"
+                  className="hover:text-[#71FF71] transition-colors"
                 >
                   Send a tip
                 </Link>
@@ -38,7 +38,7 @@ export default function Footer() {
               <li>
                 <Link
                   href="/auth/signup"
-                  className="hover:text-[#00C853] transition-colors"
+                  className="hover:text-[#71FF71] transition-colors"
                 >
                   Register your service
                 </Link>
@@ -51,7 +51,7 @@ export default function Footer() {
               <li>
                 <Link
                   href="/help"
-                  className="hover:text-[#00C853] transition-colors"
+                  className="hover:text-[#71FF71] transition-colors"
                 >
                   Help Center
                 </Link>
@@ -59,7 +59,7 @@ export default function Footer() {
               <li>
                 <Link
                   href="/contact"
-                  className="hover:text-[#00C853] transition-colors"
+                  className="hover:text-[#71FF71] transition-colors"
                 >
                   Contact Us
                 </Link>
@@ -67,7 +67,7 @@ export default function Footer() {
               <li>
                 <Link
                   href="/faq"
-                  className="hover:text-[#00C853] transition-colors"
+                  className="hover:text-[#71FF71] transition-colors"
                 >
                   FAQ
                 </Link>

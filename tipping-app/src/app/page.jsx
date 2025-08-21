@@ -5,8 +5,62 @@ import { Button } from "@/components/ui/button";
 import Image from "next/image";
 
 export default function LandingPage() {
+  const howItWorksSteps = [
+    {
+      title: "Register Your Business",
+      desc: "Sign up and add your employees to the platform. Each gets a unique tipping code.",
+      button: "Register your service",
+      link: "/auth/signup",
+      image: "/image.png",
+    },
+    {
+      title: "Share the Code",
+      desc: "Employees share their unique codes with customers after providing service.",
+      button: "Ask For a Code",
+      link: "/auth/login",
+      image: "/image copy.png",
+    },
+    {
+      title: "Instant Tipping",
+      desc: "Customers enter the code, choose amount, and pay securely through Chapa.",
+      button: "Send A Tip",
+      link: "/send-tip",
+      image: "/instant.png",
+    },
+  ];
+
+  const whyChooseFeatures = [
+    {
+      title: "Fast Payments",
+      points: [
+        "Instant digital payouts",
+        "Secure Chapa integration",
+        "No delays or manual handling",
+      ],
+      icon: "/payment.png",
+    },
+    {
+      title: "Easy to Use",
+      points: [
+        "Customer-Friendly Flow",
+        "Simple code-based tipping",
+        "Works across all devices",
+      ],
+      icon: "/easy.png",
+    },
+    {
+      title: "Boost Motivation",
+      points: [
+        "Real-time rewards",
+        "Improved morale",
+        "Better customer satisfaction",
+      ],
+      icon: "/boost.png",
+    },
+  ];
+
   return (
-    <main className="min-h-screen flex flex-col bg-white text-[#1A1A1A]">
+    <main className="min-h-screen flex flex-col bg-white text-[#1A1A1A] pt-[80px]">
       <Header />
 
       {/* Hero Section */}
@@ -21,12 +75,12 @@ export default function LandingPage() {
           </p>
           <div className="flex gap-4">
             <Link href="/auth/signup">
-              <Button className="bg-[#00C853] text-white hover:bg-[#00b74f] rounded-full px-6 py-6">
+              <Button className="bg-[#71FF71] text-black hover:bg-[#00b74f] rounded-full px-6 py-6">
                 Register your service
               </Button>
             </Link>
             <Link href="/send-tip">
-              <Button className="bg-[#F5F5F5] text-[#00C853] hover:bg-[#e0e0e0] rounded-full px-6 py-6 border border-[#00C853]">
+              <Button className="bg-[#F5F5F5] text-[#00C853] hover:bg-[#e0e0e0] rounded-full px-6 py-6 border border-[#71FF71]">
                 Send a tip
               </Button>
             </Link>
@@ -43,49 +97,39 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* How It Works Section */}
-      <section className="py-16 bg-white">
+      {/* How TipTop Works Section */}
+      <section className="py-20 bg-white">
         <div className="flex justify-center mb-6">
-          <div className="w-32 h-[2px] bg-gradient-to-r from-[#00C853] via-[#00b74f] to-[#00C853] rounded-full"></div>
+          <div className="w-32 h-[2px] bg-gradient-to-r from-[#71FF71] via-[#00b74f] to-[#00C853] rounded-full"></div>
         </div>
 
-        <h2 className="text-3xl font-semibold text-center mb-10 text-[#1A1A1A]">
+        <h2 className="text-3xl font-semibold text-center mb-16 text-[#1A1A1A]">
           How TipTop Works
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-6 md:px-20">
-          {[
-            {
-              title: "Register Your Business",
-              desc: "Sign up and add your employees to the platform. Each gets a unique tipping code.",
-              button: "Register your service",
-              link: "/auth/signup",
-            },
-            {
-              title: "Share the Code",
-              desc: "Employees share their unique codes with customers after providing service.",
-              button: "Ask For a Code",
-              link: "/auth/login",
-            },
-            {
-              title: "Instant Tipping",
-              desc: "Customers enter the code, choose amount, and pay securely through Chapa.",
-              button: "Send A Tip",
-              link: "/send-tip",
-            },
-          ].map((step, index) => (
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-6 md:px-20 text-center">
+          {howItWorksSteps.map((step, index) => (
             <div
               key={index}
-              className="bg-white rounded-2xl border border-gray-200 shadow-md p-10 text-center"
+              className="bg-white rounded-xl shadow-md p-8 flex flex-col items-center border border-gray-200 hover:shadow-lg transition-shadow duration-300 min-h-[360px]"
             >
-              <div className="w-10 h-10 mx-auto mb-4 flex items-center justify-center rounded-full bg-[#00C853] text-white font-bold">
-                {index + 1}
+              {/* Larger icon in circular container */}
+              <div className="w-24 h-24 mb-4 flex items-center justify-center rounded-full bg-[#E6F9E6]">
+                <Image
+                  src={step.image}
+                  alt={step.title}
+                  width={64}
+                  height={64}
+                  className="object-contain"
+                />
               </div>
-              <h3 className="text-xl font-semibold mb-2 text-[#1A1A1A]">
+
+              <h3 className="text-lg font-semibold text-[#1A1A1A] mb-2">
                 {step.title}
               </h3>
-              <p className="text-[#666] mb-6">{step.desc}</p>
+              <p className="text-sm text-[#666] mb-6 px-2">{step.desc}</p>
               <Link href={step.link}>
-                <Button className="bg-[#00C853] text-white rounded-full hover:bg-[#00b74f] transition-colors px-4 py-2">
+                <Button className="bg-white text-[black] border border-[#71FF71] rounded-full hover:bg-[#71FF71] hover:text-white transition-colors px-5 py-2 text-sm">
                   {step.button}
                 </Button>
               </Link>
@@ -95,34 +139,38 @@ export default function LandingPage() {
       </section>
 
       {/* Why Choose TipTop Section */}
-
+      {/* Why Choose TipTop Section */}
       <section className="py-20 bg-[#F9F9F9] px-6 md:px-20">
         <h2 className="text-3xl font-semibold text-center mb-10 text-[#1A1A1A]">
           Why Choose TipTop?
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {[
-            {
-              title: "Fast Payments",
-              desc: "Employees receive their tips instantly through secure digital transactions, eliminating delays and boosting financial confidence. With real-time payouts via Chapa, your team can access earnings without waiting for payroll cycles or manual cash handling.",
-            },
-            {
-              title: "Easy to Use",
-              desc: "TipTop is designed for simplicity. Employees get a unique code, customers enter it, and tips are sent instantly. No apps to download, no complex setup — just a clean, intuitive experience that works across devices and services. Perfect for teams with limited tech exposure.",
-            },
-            {
-              title: "Boost Motivation",
-              desc: "When employees see immediate rewards for great service, morale skyrockets. TipTop helps foster a culture of appreciation and performance. Happy staff lead to happier customers, which means better reviews, repeat business, and a stronger brand reputation.",
-            },
-          ].map((item, index) => (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+          {whyChooseFeatures.map((item, index) => (
             <div
               key={index}
-              className="bg-white rounded-xl shadow-sm p-6 text-center border border-gray-200"
+              className="bg-white rounded-xl shadow-md p-8 flex flex-col items-center border border-gray-200 hover:shadow-lg transition-shadow duration-300 min-h-[360px]"
             >
-              <h3 className="text-xl font-bold text-[#00C853] mb-4">
+              {/* Icon in circular container */}
+              <div className="w-24 h-24 mb-4 flex items-center justify-center rounded-full bg-[#E6F9E6]">
+                <Image
+                  src={item.icon}
+                  alt={item.title}
+                  width={64}
+                  height={64}
+                  className="object-contain"
+                />
+              </div>
+
+              <h3 className="text-lg font-semibold text-[#1A1A1A] mb-4">
                 {item.title}
               </h3>
-              <p className="text-[#666] leading-relaxed">{item.desc}</p>
+
+              {/* Replace bullet points with paragraph-style highlights */}
+              <div className="space-y-3 text-sm text-[#666] px-2">
+                {item.points.map((point, i) => (
+                  <p key={i}>{point}</p>
+                ))}
+              </div>
             </div>
           ))}
         </div>
@@ -134,7 +182,7 @@ export default function LandingPage() {
           Ready to Transform Your Business?
         </h2>
         <Link href="/auth/signup">
-          <Button className="bg-[#00C853] text-white px-6 py-3 rounded-full hover:bg-[#00b74f] transition-colors">
+          <Button className="bg-[#71FF71] text-black px-6 py-3 rounded-full hover:bg-[#00b74f] transition-colors">
             Get Started Today
           </Button>
         </Link>
