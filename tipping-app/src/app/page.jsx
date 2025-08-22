@@ -60,13 +60,13 @@ export default function LandingPage() {
   ];
 
   return (
-    <main className="min-h-screen flex flex-col bg-white text-[#1A1A1A] pt-[80px]">
+    <main className="font-serif min-h-screen flex flex-col bg-white text-[#1A1A1A] pt-[80px] ">
       <Header />
 
       {/* Hero Section */}
       <section className="flex flex-col md:flex-row items-center justify-between px-6 md:px-20 py-20">
         <div className="md:w-1/2 text-left">
-          <h1 className="text-5xl font-bold mb-4">
+          <h1 className=" text-4xl font-bold mb-4">
             Revolutionized Tipping for Businesses
           </h1>
           <p className="text-lg text-[#666] mb-6">
