@@ -10,7 +10,7 @@ export default function CustomerTipPage() {
   const [employeeCode, setEmployeeCode] = useState("");
   const [amount, setAmount] = useState("");
   const [message, setMessage] = useState("");
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false); 
 
   const showMessage = (text) => {
     setMessage(text);
@@ -18,14 +18,18 @@ export default function CustomerTipPage() {
   };
 
   const handleSendTip = async () => {
-    if (!employeeCode.trim() || !amount.trim() || isNaN(amount) || Number(amount) <= 0) {
+    if (
+      !employeeCode.trim() ||
+      !amount.trim() ||
+      isNaN(amount) ||
+      Number(amount) <= 0
+    ) {
       showMessage("Please enter a valid code and amount.");
       return;
     }
 
     try {
       setIsProcessing(true);
-      // Call your backend API to create a Chapa payment
       const res = await fetch("/api/send-tip", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -34,7 +38,7 @@ export default function CustomerTipPage() {
 
       const data = await res.json();
       if (res.ok) {
-        window.location.href = data.checkout_url; // Redirect to Chapa checkout
+        window.location.href = data.checkout_url;
       } else {
         showMessage(data.message || "Payment failed. Try again.");
       }
@@ -47,9 +51,9 @@ export default function CustomerTipPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="bg-white shadow-xl rounded-2xl p-8 w-full max-w-md">
-        <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="bg-card shadow-xl rounded-2xl p-8 w-full max-w-md">
+        <h1 className="text-3xl font-bold text-foreground mb-6 text-center">
           Send a Tip
         </h1>
 
@@ -61,7 +65,10 @@ export default function CustomerTipPage() {
 
         <div className="space-y-4">
           <div>
-            <Label htmlFor="employeeCode" className="text-gray-700 font-semibold">
+            <Label
+              htmlFor="employeeCode"
+              className="text-foreground font-semibold"
+            >
               Employee Code
             </Label>
             <Input
@@ -74,8 +81,8 @@ export default function CustomerTipPage() {
           </div>
 
           <div>
-            <Label htmlFor="amount" className="text-gray-700 font-semibold">
-              Tip Amount 
+            <Label htmlFor="amount" className="text-foreground font-semibold">
+              Tip Amount
             </Label>
             <Input
               id="amount"
@@ -90,16 +97,19 @@ export default function CustomerTipPage() {
           <Button
             onClick={handleSendTip}
             disabled={isProcessing}
-            className={`w-full py-3 mt-2 font-bold text-white shadow-lg rounded-xl transition-transform transform hover:scale-105 ${
-              isProcessing ? "bg-gray-400 cursor-not-allowed" : "bg-green-500 hover:bg-green-600"
-            }`}
+            className={`w-full py-3 mt-2 font-bold shadow-lg rounded-xl transition-transform transform hover:scale-105 
+              ${
+                isProcessing
+                  ? "bg-muted text-muted-foreground cursor-not-allowed"
+                  : "bg-accent text-accent-foreground hover:bg-green-500"
+              }`}
           >
             {isProcessing ? "Processing..." : "Send Tip"}
           </Button>
         </div>
 
-        <p className="text-sm text-gray-500 text-center mt-6">
-         TipTop. Quick, safe, and easy tipping from anywhere.
+        <p className="text-sm text-muted-foreground text-center mt-6">
+          TipTop. Quick, safe, and easy tipping from anywhere.
         </p>
       </div>
     </div>
