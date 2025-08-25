@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { FaEdit, FaTrash } from "react-icons/fa"; // ✅ Import icons
+import { FaEdit, FaTrash, FaSignOutAlt } from "react-icons/fa"; // ✅ Added logout icon
 
 export default function EmployeeDashboard() {
   const [employees, setEmployees] = useState([]);
@@ -24,14 +24,10 @@ export default function EmployeeDashboard() {
         setEmployees(JSON.parse(storedEmployees));
       } else {
         const dummyEmployees = [
-          { id: "1", name: "Alice Johnson", role: "Barista", status: "Active", tip: 15, code: "TIP-ABCDE" },
-          { id: "2", name: "Bob Smith", role: "Delivery", status: "Inactive", tip: 0, code: "TIP-FGHIJ" },
-          { id: "3", name: "Charlie Davis", role: "Cashier", status: "Active", tip: 25, code: "TIP-KLMNO" },
-          { id: "4", name: "Diana Evans", role: "Manager", status: "Active", tip: 50, code: "TIP-PQRST" },
-          { id: "5", name: "Ethan Foster", role: "Barista", status: "Active", tip: 10, code: "TIP-UVWXY" },
-          { id: "6", name: "Fiona Green", role: "Delivery", status: "Inactive", tip: 0, code: "TIP-ZABCD" },
-          { id: "7", name: "George Harris", role: "Cashier", status: "Active", tip: 30, code: "TIP-EFGHI" },
-          { id: "8", name: "Hannah White", role: "Manager", status: "Active", tip: 65, code: "TIP-JKLMNOP" },
+          { id: "1", name: "Alice Johnson", role: "Barista", status: "Active", code: "TIP-ABCDE" },
+          { id: "2", name: "Bob Smith", role: "Delivery", status: "Inactive", code: "TIP-FGHIJ" },
+          { id: "3", name: "Charlie Davis", role: "Cashier", status: "Active", code: "TIP-KLMNO" },
+          { id: "4", name: "Diana Evans", role: "Manager", status: "Active", code: "TIP-PQRST" },
         ];
         setEmployees(dummyEmployees);
       }
@@ -60,7 +56,6 @@ export default function EmployeeDashboard() {
         name: newEmployeeName,
         role: newEmployeeRole,
         status: newEmployeeStatus,
-        tip: 0,
         code: generateEmployeeCode(),
       };
       setEmployees((prev) => [...prev, newEmployee]);
@@ -104,20 +99,42 @@ export default function EmployeeDashboard() {
     showMessage("Employee deleted successfully!");
   };
 
+  const handleLogout = () => {
+    localStorage.clear();
+    showMessage("You have logged out.");
+    setTimeout(() => {
+      window.location.href = "/login"; 
+    }, 1500);
+  };
+
   return (
     <div className="bg-background text-foreground min-h-screen font-sans">
       <div className="mx-auto overflow-hidden">
-        <header className="px-3 sm:px-6 py-3 border-b border-border">
-          <h2 className="font-bold text-2xl">TipTop</h2>
-          <p className="text-muted-foreground text-sm mt-1">EthioCoffee House</p>
+        <header className="flex justify-between items-center px-3 sm:px-6 py-3 border-b border-border">
+          <div>
+            <h2 className="font-bold text-2xl">TipTop</h2>
+            <p className="text-muted-foreground text-sm">EthioCoffee House</p>
+          </div>
+          <div className="flex items-center gap-4">
+          
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 bg-accent text-accent-foreground font-bold py-2 px-4 rounded-lg shadow-sm hover:opacity-90 transition"
+            >
+              <FaSignOutAlt /> Logout
+            </button>
+          </div>
         </header>
 
         <main className="p-4 sm:p-6">
-          {message && (
-            <div className="mb-4 p-3 rounded-lg text-sm text-center text-foreground bg-accent transition-opacity duration-300">
-              {message}
-            </div>
-          )}
+        {message && (
+  <div className="mb-4">
+    <span className="inline-block mx-auto px-4 py-2 rounded-lg text-sm text-foreground bg-accent shadow-sm">
+      {message}
+    </span>
+  </div>
+)}
+
 
           <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <h3 className="font-semibold text-lg sm:text-xl">Employee Management</h3>
@@ -187,7 +204,6 @@ export default function EmployeeDashboard() {
                   <th className="px-3 sm:px-6 py-3 text-left font-semibold uppercase tracking-wider">Name</th>
                   <th className="px-3 sm:px-6 py-3 text-left font-semibold uppercase tracking-wider">Role</th>
                   <th className="px-3 sm:px-6 py-3 text-left font-semibold uppercase tracking-wider">Status</th>
-                  <th className="px-3 sm:px-6 py-3 text-left font-semibold uppercase tracking-wider">Tip ($)</th>
                   <th className="px-3 sm:px-6 py-3 text-left font-semibold uppercase tracking-wider">Code</th>
                   <th className="px-3 sm:px-6 py-3 text-left font-semibold uppercase tracking-wider"></th>
                 </tr>
@@ -226,7 +242,6 @@ export default function EmployeeDashboard() {
                             <option value="Inactive">Inactive</option>
                           </select>
                         </td>
-                        <td className="px-3 sm:px-6 py-4">{editingEmployee.tip}</td>
                         <td className="px-3 sm:px-6 py-4">
                           <input
                             type="text"
@@ -237,16 +252,10 @@ export default function EmployeeDashboard() {
                           />
                         </td>
                         <td className="px-3 sm:px-6 py-4 text-right space-x-2">
-                          <button
-                            onClick={handleSaveEdit}
-                            className="text-accent hover:underline"
-                          >
+                          <button onClick={handleSaveEdit} className="text-accent hover:underline">
                             Save
                           </button>
-                          <button
-                            onClick={handleCancelEdit}
-                            className="text-muted-foreground hover:underline"
-                          >
+                          <button onClick={handleCancelEdit} className="text-muted-foreground hover:underline">
                             Cancel
                           </button>
                         </td>
@@ -256,10 +265,8 @@ export default function EmployeeDashboard() {
                         <td className="px-3 sm:px-6 py-4">{employee.name}</td>
                         <td className="px-3 sm:px-6 py-4">{employee.role}</td>
                         <td className="px-3 sm:px-6 py-4">{employee.status}</td>
-                        <td className="px-3 sm:px-6 py-4">{employee.tip}</td>
                         <td className="px-3 sm:px-6 py-4">{employee.code}</td>
                         <td className="px-3 sm:px-6 py-4 text-right space-x-3">
-                          {/* ✅ Replaced text with icons */}
                           <button
                             onClick={() => handleEditClick(employee)}
                             className="text-accent hover:text-accent/80"
@@ -279,10 +286,7 @@ export default function EmployeeDashboard() {
                 ))}
                 {employees.length === 0 && (
                   <tr>
-                    <td
-                      colSpan="6"
-                      className="px-3 sm:px-6 py-6 text-center text-muted-foreground"
-                    >
+                    <td colSpan="5" className="px-3 sm:px-6 py-6 text-center text-muted-foreground">
                       No employees added yet.
                     </td>
                   </tr>
