@@ -25,7 +25,7 @@ export default function Header() {
           Login
         </Link>
         <Link
-          href="/send-tip"
+          href="/Tip"
           className="hover:text-[#71FF71] transition-colors"
         >
           Send a Tip

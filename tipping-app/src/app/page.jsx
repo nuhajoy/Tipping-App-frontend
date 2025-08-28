@@ -24,7 +24,7 @@ export default function LandingPage() {
       title: "Instant Tipping",
       desc: "Customers enter the code, choose amount, and pay securely through Chapa.",
       button: "Send A Tip",
-      link: "/send-tip",
+      link: "/Tip",
       image: "/instant.png",
     },
   ];
@@ -79,7 +79,7 @@ export default function LandingPage() {
                 Register your service
               </Button>
             </Link>
-            <Link href="/send-tip">
+            <Link href="/Tip">
               <Button className="bg-[#F5F5F5] text-[#00C853] hover:bg-[#e0e0e0] rounded-full px-6 py-6 border border-[#71FF71]">
                 Send a tip
               </Button>
