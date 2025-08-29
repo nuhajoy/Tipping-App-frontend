@@ -1,354 +1,223 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Toaster } from "sonner";
 import { useAdminStore } from "@/store/adminStore";
+import { useEffect, useRef, useState } from "react";
+import { Card } from "@/components/ui/card";
 
-export default function AdminDashboard() {
-  const {
-    providers,
-    expandedRow,
-    editRow,
-    searchQuery,
-    activeTab,
-    setExpandedRow,
-    setEditRow,
-    setSearchQuery,
-    setActiveTab,
-    loadProviders,
-    handleApprove,
-    handleSuspend,
-    handleRemove,
-  } = useAdminStore();
-
+const StatCard = ({ title, value }) => (
+  <Card className="p-4 rounded-2xl shadow-sm hover:shadow-md transform hover:-translate-y-0.5 transition-all duration-300">
+    <h4 className="text-sm text-muted-foreground mb-2">{title}</h4>
+    <p className="text-xl font-bold">{value}</p>
+  </Card>
+);
+const useAdminAnalytics = () => {
+  const { providers, loadProviders } = useAdminStore();
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchAnalytics = async () => {
       try {
         setLoading(true);
         await loadProviders();
       } catch (err) {
-        console.error(err);
-        setError("Failed to load providers. Please try again.");
+        console.error("Failed to fetch admin data:", err);
+        setError("Failed to load data. Please try again.");
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
+    fetchAnalytics();
   }, [loadProviders]);
+  const mockAnalytics = {
+    totalTips: 16500,
+    withdrawn: 4500,
+    platformRevenue: 12000,
+    activeProviders: providers.length,
+    totalEmployees: 12,
+  };
 
-  const filteredProviders = providers.filter((p) =>
-    p.businessName?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const mockChartData = [
+    { label: "Week 1", value: 2000 },
+    { label: "Week 2", value: 4000 },
+    { label: "Week 3", value: 7000 },
+    { label: "Week 4", value: 10000 },
+    { label: "Week 5", value: 13000 },
+    { label: "Week 6", value: 16500 },
+  ];
 
-const transactions = [
-  { title: "Top Performer", amount: "1200 ETB" },
-  { title: "Most Active Provider", amount: "950 ETB" },
-  { title: "Highest Single Tip", amount: "500 ETB" },
-];
+  return {
+    analytics: mockAnalytics,
+    chartData: mockChartData,
+    loading,
+    error,
+  };
+};
 
-  return (
-    <div className="min-h-screen bg-primary text-secondary">
-      <Header activeTab={activeTab} setActiveTab={setActiveTab} />
+export default function AdminDashboard() {
+  const { analytics, chartData, loading, error } = useAdminAnalytics();
+  const pathRef = useRef(null);
+  const [pathLength, setPathLength] = useState(0);
+  const [hoveredPoint, setHoveredPoint] = useState(null);
 
-      <div className="p-4 md:p-6 space-y-6">
-        <DashboardCards />
+  const svgMetrics = {
+    width: 720,
+    height: 220,
+    padding: { left: 48, right: 16, top: 16, bottom: 28 },
+  };
 
-        {activeTab === "providers" && (
-          <Card className="p-4 rounded-2xl shadow-lg">
-            <h3 className="text-lg font-semibold mb-4">Service Providers</h3>
+  const { width, height, padding } = svgMetrics;
+  const innerWidth = width - padding.left - padding.right;
+  const innerHeight = height - padding.top - padding.bottom;
+  const maxMoney = Math.max(...chartData.map((d) => d.value));
+  const getX = (i) => padding.left + (i / (chartData.length - 1)) * innerWidth;
+  const getY = (val) => padding.top + (1 - val / maxMoney) * innerHeight;
+  const points = chartData.map((d, i) => `${getX(i)},${getY(d.value)}`).join(" ");
 
-            <Input
-              placeholder="Search providers..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="mb-4 !shadow-none max-w-sm"
-            />
+  useEffect(() => {
+    if (pathRef.current) {
+      setPathLength(pathRef.current.getTotalLength());
+    }
+  }, [points]);
 
-            {loading ? (
-              <p className="text-muted">Loading providers...</p>
-            ) : error ? (
-              <p className="text-error">{error}</p>
-            ) : (
-              <ProvidersTable
-                providers={filteredProviders}
-                expandedRow={expandedRow}
-                editRow={editRow}
-                setExpandedRow={setExpandedRow}
-                setEditRow={setEditRow}
-                handleApprove={handleApprove}
-                handleSuspend={handleSuspend}
-                handleRemove={handleRemove}
-              />
-            )}
-          </Card>
-        )}
+  if (loading) return <div>Loading dashboard...</div>;
+  if (error) return <div>Error: {error}</div>;
 
-        {activeTab === "transactions" && (
-          <Card className="p-4 rounded-2xl shadow-lg">
-            <h3 className="text-lg font-semibold mb-4">Transaction Overview</h3>
-            <TransactionsList
-              transactions={transactions}
-              expandedRow={expandedRow}
-              setExpandedRow={setExpandedRow}
-              providers={providers}
-            />
-          </Card>
-        )}
-      </div>
-
-      <Toaster />
-    </div>
-  );
-}
-
-const Header = ({ activeTab, setActiveTab }) => (
-  <header className="flex flex-col md:flex-row items-center justify-between px-6 py-4 bg-primary shadow-md">
-    <div className="flex items-center gap-2 mb-2 md:mb-0">
-      <div
-        style={{
-          backgroundImage: "url('/logo.png')",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          width: "40px",
-          height: "40px",
-          borderRadius: "50%",
-        }}
-      ></div>
-      <span className="text-xl font-bold text-secondary">
-        TipTop - Admin Dashboard
-      </span>
-    </div>
-    <nav className="flex flex-wrap gap-4 text-sm font-medium text-secondary">
-      <button
-        onClick={() => setActiveTab("providers")}
-        className={`px-3 py-1 rounded ${
-          activeTab === "providers"
-            ? "text-accent underline"
-            : "hover:bg-muted text-secondary"
-        }`}
-      >
-        Providers
-      </button>
-      <button
-        onClick={() => setActiveTab("transactions")}
-        className={`px-3 py-1 rounded ${
-          activeTab === "transactions"
-            ? "text-accent underline"
-            : "hover:bg-muted text-secondary"
-        }`}
-      >
-        Transactions
-      </button>
-      <a
-        href="/"
-        className="px-3 py-1 rounded hover:bg-muted text-secondary"
-      >
-        Logout
-      </a>
-    </nav>
-  </header>
-);
-
-const DashboardCards = () => {
-  const transactionSummary = {
-    recentTransaction: "500 ETB",
-    totalTransactions: "16,500 ETB",
-    inPlatformMoney: "12,000 ETB",
-    withdrawnMoney: "4,500 ETB",
+  const transactionData = {
+    "Recent Transaction": "500 ETB",
+    "Total Transactions": `${analytics.totalTips} ETB`,
+    "Platform Revenue": `${analytics.platformRevenue} ETB`,
+    "Withdrawn Money": `${analytics.withdrawn} ETB`,
   };
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-      {Object.entries(transactionSummary).map(([title, value]) => (
-        <Card key={title} className="p-4 rounded-2xl shadow-lg">
-          <h4 className="text-sm text-muted mb-2 capitalize">
-            {title.replace(/([A-Z])/g, " $1")}
-          </h4>
-          <p className="text-lg font-bold">{value}</p>
-        </Card>
-      ))}
-    </div>
-  );
-};
+    <>
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-2">
+        {Object.entries(transactionData).map(([title, value]) => (
+          <StatCard key={title} title={title} value={value} />
+        ))}
+      </div>
 
-const ProvidersTable = ({
-  providers,
-  expandedRow,
-  editRow,
-  setExpandedRow,
-  setEditRow,
-  handleApprove,
-  handleSuspend,
-  handleRemove,
-}) => (
-  <div className="overflow-x-auto">
-    <table className="w-full border-collapse">
-      <thead>
-        <tr className="bg-muted">
-          <th className="p-2 border">Name</th>
-          <th className="p-2 border">Type</th>
-          <th className="p-2 border">Email</th>
-          <th className="p-2 border">Status</th>
-          <th className="p-2 border">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {providers.length === 0 ? (
-          <tr>
-            <td colSpan="5" className="p-4 text-center text-muted/70">
-              No service providers found
-            </td>
-          </tr>
-        ) : (
-          providers.flatMap((provider) => {
-            const providerKey =
-              provider.id || provider.businessEmail || "unknown-provider";
-
-            const rows = [
-              <tr
-                key={providerKey}
-                className="border-b border-secondary hover:bg-muted/50 cursor-pointer"
-                onClick={() =>
-                  setExpandedRow(expandedRow === providerKey ? null : providerKey)
-                }
-              >
-                <td className="p-2 border">{provider.businessName}</td>
-                <td className="p-2 border">{provider.businessType}</td>
-                <td className="p-2 border">{provider.businessEmail}</td>
-                <td className="p-2 border">{provider.status || "Pending"}</td>
-                <td className="p-2 border space-x-2">
-                  {editRow === providerKey ? (
-                    <>
-                      <Button
-                        size="sm"
-                        className="bg-muted hover:opacity-90 text-secondary"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleApprove(provider.id);
-                        }}
-                      >
-                        Approve
-                      </Button>
-                      <Button
-                        size="sm"
-                        className="bg-muted hover:opacity-90 text-secondary"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleSuspend(provider.id);
-                        }}
-                      >
-                        Suspend
-                      </Button>
-                      <Button
-                        size="sm"
-                        className="bg-error hover:opacity-90 text-secondary"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRemove(provider.id);
-                        }}
-                      >
-                        Remove
-                      </Button>
-                    </>
-                  ) : (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditRow(providerKey);
-                      }}
-                    >
-                      Edit
-                    </Button>
-                  )}
-                </td>
-              </tr>,
-            ];
-
-            if (expandedRow === providerKey) {
-              rows.push(
-                <tr key={providerKey + "-details"} className="bg-muted/30">
-                  <td colSpan="5" className="p-4 text-sm">
-                    <div className="space-y-1">
-                      <p>
-                        <strong>Description:</strong>{" "}
-                        {provider.businessDescription || "—"}
-                      </p>
-                      <p>
-                        <strong>Address:</strong> {provider.businessAddress}
-                      </p>
-                      <p>
-                        <strong>City:</strong> {provider.city}
-                      </p>
-                      <p>
-                        <strong>Region:</strong> {provider.region}
-                      </p>
-                      <p>
-                        <strong>Phone:</strong> {provider.businessPhone}
-                      </p>
-                      <p>
-                        <strong>Tax ID:</strong> {provider.taxId || "—"}
-                      </p>
-                    </div>
-                  </td>
-                </tr>
-              );
-            }
-
-            return rows;
-          })
-        )}
-      </tbody>
-    </table>
-  </div>
-);
-
-const TransactionsList = ({ transactions, expandedRow, setExpandedRow, providers }) => (
-  <ul className="space-y-3">
-    {transactions.map((t) => {
-      const transactionKey = t.title;
-      return (
-        <li key={transactionKey} className="bg-muted rounded-lg">
-          <div
-            className="p-3 flex justify-between cursor-pointer"
-            onClick={() =>
-              setExpandedRow(expandedRow === transactionKey ? null : transactionKey)
-            }
-          >
-            <span>{t.title}</span>
-            <span className="font-bold">{t.amount}</span>
-          </div>
-
-          {expandedRow === transactionKey && (
-            <div className="p-3 text-sm bg-muted/30 space-y-1">
-              <p>
-                <strong>Provider Name:</strong>{" "}
-                {providers[0]?.businessName || "Sample Hotel"}
-              </p>
-              <p>
-                <strong>Email:</strong>{" "}
-                {providers[0]?.businessEmail || "hotel@example.com"}
-              </p>
-              <p>
-                <strong>Phone:</strong>{" "}
-                {providers[0]?.businessPhone || "+251 900 000000"}
-              </p>
-              <p>
-                <strong>City:</strong> {providers[0]?.city || "Addis Ababa"}
-              </p>
+      <Card className="p-4 rounded-2xl shadow-sm hover:shadow-md transition-shadow duration-200">
+        <h3 className="text-lg font-semibold mb-4">Platform Growth (ETB)</h3>
+        <div className="relative w-full overflow-hidden">
+          {hoveredPoint && (
+            <div
+              className="absolute z-10 bg-card border border-border rounded-lg shadow px-2 py-1 text-xs pointer-events-none"
+              style={{
+                left: Math.min(Math.max(hoveredPoint.x - 40, 8), width - 90),
+                top: Math.max(hoveredPoint.y - 36, 8),
+              }}
+            >
+              <div className="font-semibold">{hoveredPoint.label}</div>
+              <div className="text-muted-foreground">{hoveredPoint.value.toLocaleString()} ETB</div>
             </div>
           )}
-        </li>
-      );
-    })}
-  </ul>
-);
+          <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-64">
+            <line
+              x1={padding.left}
+              y1={height - padding.bottom}
+              x2={width - padding.right}
+              y2={height - padding.bottom}
+              stroke="var(--border)"
+              strokeWidth="1"
+            />
+            <line
+              x1={padding.left}
+              y1={padding.top}
+              x2={padding.left}
+              y2={height - padding.bottom}
+              stroke="var(--border)"
+              strokeWidth="1"
+            />
+            {[0, 0.25, 0.5, 0.75, 1].map((t, i) => {
+              const gy = padding.top + (1 - t) * innerHeight;
+              return (
+                <line
+                  key={`grid-line-${i}`}
+                  x1={padding.left}
+                  x2={width - padding.right}
+                  y1={gy}
+                  y2={gy}
+                  stroke="var(--input)"
+                  strokeWidth="1"
+                />
+              );
+            })}
+            
+            <polyline
+              ref={pathRef}
+              fill="none"
+              stroke="var(--foreground)"
+              strokeWidth="3"
+              points={points}
+              style={{
+                strokeDasharray: pathLength,
+                strokeDashoffset: pathLength,
+                animation: "dash-anim 1.2s ease forwards",
+              }}
+            />
+            <style>{`@keyframes dash-anim { to { stroke-dashoffset: 0; } }`}</style>
 
-
+            {chartData.map((d, i) => {
+              const cx = getX(i);
+              const cy = getY(d.value);
+              return (
+                <g key={`data-point-${i}`}>
+                  <circle
+                    cx={cx}
+                    cy={cy}
+                    r="5"
+                    fill="var(--accent)"
+                    className="transition-colors duration-150"
+                    onMouseEnter={() =>
+                      setHoveredPoint({ i, x: cx, y: cy, value: d.value, label: d.label })
+                    }
+                    onMouseLeave={() => setHoveredPoint(null)}
+                  />
+                  <circle
+                    cx={cx}
+                    cy={cy}
+                    r="12"
+                    fill="transparent"
+                    onMouseEnter={() =>
+                      setHoveredPoint({ i, x: cx, y: cy, value: d.value, label: d.label })
+                    }
+                    onMouseLeave={() => setHoveredPoint(null)}
+                  />
+                </g>
+              );
+            })}
+            
+            {chartData.map((d, i) => (
+              <text
+                key={`x-label-${i}`}
+                x={getX(i)}
+                y={height - padding.bottom + 18}
+                fontSize="12"
+                textAnchor="middle"
+                fill="var(--muted-foreground)"
+              >
+                {d.label}
+              </text>
+            ))}
+           
+            {[0, 5000, 10000, 15000, maxMoney].map((val, i) => (
+              <text
+                key={`y-label-${i}`}
+                x={padding.left - 8}
+                y={getY(val)}
+                fontSize="12"
+                textAnchor="end"
+                dominantBaseline="middle"
+                fill="var(--muted-foreground)"
+              >
+                {val}
+              </text>
+            ))}
+          </svg>
+        </div>
+      </Card>
+    </>
+  );
+}
