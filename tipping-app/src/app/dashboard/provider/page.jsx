@@ -1,4 +1,5 @@
 'use client';
+
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { 
@@ -13,7 +14,9 @@ import {
   Trash2,
   Check,
   X,
-  LogOut
+  LogOut,
+  Menu,
+  X as CloseIcon
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -40,6 +43,22 @@ export default function Dashboard() {
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState('');
   const [editRole, setEditRole] = useState('');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Check screen size on mount and resize
+  useEffect(() => {
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkIfMobile();
+    window.addEventListener('resize', checkIfMobile);
+    
+    return () => {
+      window.removeEventListener('resize', checkIfMobile);
+    };
+  }, []);
 
   useEffect(() => {
     const storedEmployees = localStorage.getItem('employees');
@@ -91,9 +110,35 @@ export default function Dashboard() {
     router.push('/login');
   };
 
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    if (isMobile) {
+      setIsMobileMenuOpen(false);
+    }
+  };
+
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 py-6 px-4 flex flex-col justify-between">
+      {/* Mobile Menu Button */}
+      {isMobile && (
+        <div className="fixed top-4 left-4 z-50">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="bg-white dark:bg-gray-800 shadow-md"
+          >
+            {isMobileMenuOpen ? <CloseIcon className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </Button>
+        </div>
+      )}
+
+      {/* Sidebar - Hidden on mobile unless menu is open */}
+      <div className={`
+        ${isMobile ? 'fixed inset-0 z-40 transform transition-transform duration-300' : 'relative'} 
+        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} 
+        md:translate-x-0 w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 py-6 px-4 flex flex-col justify-between
+      `}>
         <div>
           <div className="flex items-center justify-between mb-8 px-2">
             <div className="flex items-center">
@@ -105,9 +150,11 @@ export default function Dashboard() {
                 priority
               />
             </div>
-            <Button variant="ghost" size="icon">
-              <Bell className="h-5 w-5 text-gray-500" />
-            </Button>
+            {!isMobile && (
+              <Button variant="ghost" size="icon">
+                <Bell className="h-5 w-5 text-gray-500" />
+              </Button>
+            )}
           </div>
 
           <nav className="space-y-1">
@@ -122,10 +169,10 @@ export default function Dashboard() {
                 variant="ghost"
                 className={`w-full justify-start ${
                   activeTab === key
-                    ? 'bg-[var(--accent)]  hover:opacity-90'
+                    ? 'bg-[var(--accent)] hover:opacity-90'
                     : 'hover:bg-gray-100 dark:hover:bg-gray-800'
                 }`}
-                onClick={() => setActiveTab(key)}
+                onClick={() => handleTabChange(key)}
               >
                 <Icon className="mr-3 h-5 w-5" />
                 {label}
@@ -133,10 +180,28 @@ export default function Dashboard() {
             ))}
           </nav>
         </div>
+        
+        {isMobile && (
+          <Button 
+            variant="destructive" 
+            className="flex items-center justify-center h-10 bg-red-600 mt-4"
+            onClick={handleLogout}
+          >
+            <LogOut className="mr-2 h-5 w-5" /> Logout
+          </Button>
+        )}
       </div>
 
-      <div className="flex-1 overflow-hidden">
-        <header className="flex items-center justify-between p-6 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+      {/* Overlay for mobile menu */}
+      {isMobile && isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-30"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+<div className={`flex-1 ${isMobile ? 'overflow-auto' : 'overflow-hidden'} md:overflow-auto`}>
+        <header className="flex items-center justify-between p-4 md:p-6 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center space-x-4">
             <div className="hidden sm:flex items-center space-x-2">
               <Avatar className="h-10 w-10">
@@ -150,8 +215,8 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="flex items-center space-x-4">
-            <div className="relative">
+          <div className="flex items-center space-x-2 md:space-x-4">
+            <div className="relative hidden md:block">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
                 type="text"
@@ -159,17 +224,27 @@ export default function Dashboard() {
                 className="pl-10 w-64 bg-gray-100 dark:bg-gray-700 border-none"
               />
             </div>
-            <Button 
-              variant="destructive" 
-              className="flex items-center justify-center h-10 bg-red-600"
-              onClick={handleLogout}
-            >
-              <LogOut className="mr-2 h-5 w-5 " /> Logout
-            </Button>
+            
+            {/* Mobile search button */}
+            {isMobile && (
+              <Button variant="ghost" size="icon">
+                <Search className="h-5 w-5 text-gray-500" />
+              </Button>
+            )}
+            
+            {!isMobile && (
+              <Button 
+                variant="destructive" 
+                className="flex items-center justify-center h-10 bg-red-600"
+                onClick={handleLogout}
+              >
+                <LogOut className="mr-2 h-5 w-5" /> Logout
+              </Button>
+            )}
           </div>
         </header>
 
-        <main className="p-6">
+        <main className="p-4 md:p-6">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <TabsContent value="overview">
               <div className="space-y-6">
@@ -181,19 +256,19 @@ export default function Dashboard() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-center">
                   <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow">
                     <CardHeader>
-                      <CardTitle>Total Employees</CardTitle>
+                      <CardTitle className="text-sm md:text-base">Total Employees</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-2xl font-bold text-gray-800 dark:text-white">{employees.length}</p>
+                      <p className="text-xl md:text-2xl font-bold text-gray-800 dark:text-white">{employees.length}</p>
                     </CardContent>
                   </Card>
 
                   <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow">
                     <CardHeader>
-                      <CardTitle>Unique Roles</CardTitle>
+                      <CardTitle className="text-sm md:text-base">Unique Roles</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-2xl font-bold text-gray-800 dark:text-white">
+                      <p className="text-xl md:text-2xl font-bold text-gray-800 dark:text-white">
                         {[...new Set(employees.map(e => e.role))].length}
                       </p>
                     </CardContent>
@@ -201,17 +276,17 @@ export default function Dashboard() {
 
                   <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow">
                     <CardHeader>
-                      <CardTitle>Transactions</CardTitle>
+                      <CardTitle className="text-sm md:text-base">Transactions</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-2xl font-bold text-gray-800 dark:text-white">24</p>
+                      <p className="text-xl md:text-2xl font-bold text-gray-800 dark:text-white">24</p>
                     </CardContent>
                   </Card>
                 </div>
 
                 <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
                   <CardHeader>
-                    <CardTitle>Recent Employees</CardTitle>
+                    <CardTitle className="text-sm md:text-base">Recent Employees</CardTitle>
                     <CardDescription>Recently added team members</CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -235,7 +310,7 @@ export default function Dashboard() {
                               <p className="text-xs text-gray-500 dark:text-gray-400">{emp.role}</p>
                             </div>
                           </div>
-                          <Badge variant="outline" className="bg-black text-white">{emp.code}</Badge>
+                          <Badge variant="outline" className="bg-black text-white text-xs">{emp.code}</Badge>
                         </motion.div>
                       ))}
                     </AnimatePresence>
@@ -246,18 +321,18 @@ export default function Dashboard() {
 
             <TabsContent value="employees">
               <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-                <CardHeader className="flex flex-row items-center justify-between">
+                <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between space-y-4 md:space-y-0">
                   <div>
-                    <CardTitle className="text-gray-800 dark:text-white">Employees</CardTitle>
+                    <CardTitle className="text-sm md:text-base text-gray-800 dark:text-white">Employees</CardTitle>
                     <CardDescription>Manage your cafe staff</CardDescription>
                   </div>
 
                   {!showForm ? (
-                    <Button onClick={() => setShowForm(true)} className="bg-[var(--accent)] flex items-center">
+                    <Button onClick={() => setShowForm(true)} className="bg-[var(--accent)] flex items-center w-full md:w-auto">
                       <PlusCircle className="mr-2 h-4 w-4" /> Add Employee
                     </Button>
                   ) : (
-                    <div className="flex space-x-2">
+                    <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 w-full md:w-auto">
                       <Input placeholder="Name" value={newName} onChange={e => setNewName(e.target.value)} />
                       <Input placeholder="Role" value={newRole} onChange={e => setNewRole(e.target.value)} />
                       <Button onClick={addEmployee} className="bg-[var(--accent)] hover:opacity-80">Save</Button>
@@ -276,29 +351,29 @@ export default function Dashboard() {
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, x: -50 }}
                           transition={{ duration: 0.3 }}
-                          className="flex items-center justify-between p-4"
+                          className="flex flex-col md:flex-row items-start md:items-center justify-between p-4 space-y-2 md:space-y-0"
                         >
-                          <div className="flex items-center space-x-4">
+                          <div className="flex items-center space-x-4 w-full md:w-auto">
                             <Avatar className="h-10 w-10">
                               <AvatarImage src={emp.avatar || '/avatars/default.jpg'} />
                               <AvatarFallback>{emp.name.charAt(0)}</AvatarFallback>
                             </Avatar>
 
                             {editingId === emp.id ? (
-                              <div className="flex space-x-2">
+                              <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 w-full md:w-auto">
                                 <Input value={editName} onChange={e => setEditName(e.target.value)} placeholder="Name" />
                                 <Input value={editRole} onChange={e => setEditRole(e.target.value)} placeholder="Role" />
                               </div>
                             ) : (
-                              <div>
+                              <div className="flex-1">
                                 <p className="text-sm font-medium text-gray-800 dark:text-white">{emp.name}</p>
                                 <p className="text-xs text-gray-500 dark:text-gray-400">{emp.role}</p>
                               </div>
                             )}
                           </div>
 
-                          <div className="flex items-center space-x-2">
-                            <Badge variant="outline" className="bg-black text-white">{emp.code}</Badge>
+                          <div className="flex items-center justify-between w-full md:w-auto space-x-2 self-end md:self-auto">
+                            <Badge variant="outline" className="bg-black text-white text-xs">{emp.code}</Badge>
                             {editingId === emp.id ? (
                               <>
                                 <Button variant="ghost" size="icon" onClick={() => saveEdit(emp.id)}><Check className="h-4 w-4 text-green-500" /></Button>
@@ -322,7 +397,7 @@ export default function Dashboard() {
             <TabsContent value="transactions">
               <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
                 <CardHeader>
-                  <CardTitle>Transactions</CardTitle>
+                  <CardTitle className="text-sm md:text-base">Transactions</CardTitle>
                   <CardDescription>Manage cafe transactions</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -335,21 +410,21 @@ export default function Dashboard() {
               <div className="space-y-6">
                 <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
                   <CardHeader>
-                    <CardTitle>Profile & Account</CardTitle>
+                    <CardTitle className="text-sm md:text-base">Profile & Account</CardTitle>
                     <CardDescription>Update cafe information</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="flex items-center space-x-4">
+                    <div className="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-4">
                       <Avatar className="h-16 w-16">
                         <AvatarImage src="/avatars/default.jpg" />
                         <AvatarFallback>EC</AvatarFallback>
                       </Avatar>
                       <Input type="file" accept="image/*" className="w-full" />
                     </div>
-                    <Input placeholder="Cafee Name" className="w-full" />
-                    <Input placeholder="Cafee Email" type="email" className="w-full" />
+                    <Input placeholder="Cafe Name" className="w-full" />
+                    <Input placeholder="Cafe Email" type="email" className="w-full" />
                     <Input placeholder="New Password" type="password" className="w-full" />
-                    <Button className="bg-[var(--accent)] hover:opacity-80">Save Profile</Button>
+                    <Button className="bg-[var(--accent)] hover:opacity-80 w-full md:w-auto">Save Profile</Button>
                   </CardContent>
                 </Card>
               </div>
