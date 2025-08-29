@@ -30,7 +30,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 function generateCode(name) {
   const prefix = name.substring(0, 3).toUpperCase();
   const randomNum = Math.floor(100 + Math.random() * 900);
-  return `${prefix}${randomNum}`;
+  returcn `${prefix}${randomNum}`;
 }
 
 export default function Dashboard() {
