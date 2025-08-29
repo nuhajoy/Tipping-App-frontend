@@ -54,7 +54,8 @@ export default function Signup() {
     
     toast.success("Registration successful! You will now be redirected to your dashboard.");
     resetSignupData();
-    window.location.href = "/dashboard/provider";
+    window.location.href =
+      "/auth/verify";
   };
 
   const handleNextStep = () => {

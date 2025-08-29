@@ -18,16 +18,16 @@ export default function Header() {
 
       {/* Navigation */}
       <nav className="flex items-center gap-6 text-sm font-medium text-[#1A1A1A]">
+        <Link href="/components/about" className="hover:text-[#71FF71] transition-colors">
+          About Us
+        </Link>
         <Link
           href="/auth/login"
           className="hover:text-[#71FF71] transition-colors"
         >
           Login
         </Link>
-        <Link
-          href="/send-tip"
-          className="hover:text-[#71FF71] transition-colors"
-        >
+        <Link href="/Tip" className="hover:text-[#71FF71] transition-colors">
           Send a Tip
         </Link>
         <Link href="/auth/signup">
