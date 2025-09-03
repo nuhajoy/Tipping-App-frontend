@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Toaster, toast } from "sonner";
 import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Upload } from "lucide-react";
 
 export default function Signup() {
   const router = useRouter();
@@ -24,6 +24,9 @@ export default function Signup() {
   } = useAuthStore();
 
   const rightPanelRef = useRef(null);
+  const fileInputRef = useRef(null);
+
+  const apiUrl = process.env.API_BASE_URL;
 
   useEffect(() => {
     const updateHeight = () => {
@@ -37,30 +40,51 @@ export default function Signup() {
   }, [step, setPanelHeight]);
 
   const handleChange = (e) => {
-    setSignupData({ [e.target.name]: e.target.value });
+    const { name, value, files } = e.target;
+    if (name === "license") {
+      if (files && files.length > 0) {
+        setSignupData({ [name]: files[0], licenseName: files[0].name });
+      }
+    } else {
+      setSignupData({ [name]: value });
+    }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (signupData.password !== signupData.confirmPassword) {
       toast.error("Passwords do not match!");
       return;
     }
 
-    const existing = JSON.parse(localStorage.getItem("serviceProviders") || "[]");
-    const dataArray = Array.isArray(existing) ? existing : [existing];
-    const updated = [...dataArray, signupData];
+    const formData = new FormData();
+    const provider_data = {
+      name: signupData.businessName || "",
+      category_id: signupData.businessType || "",
+      email: signupData.businessEmail || "",
+      description: signupData.businessDescription || "",
+      tax_id: signupData.taxId || "",
+      password: signupData.password || "",
+      contact_phone: signupData.businessPhone || "",
+      address: {
+        street_address: signupData.businessAddress || "",
+        city: signupData.city || "",
+        region: signupData.region || "",
+      },
+      image_url: signupData.imageUrl || "",
+    };
 
-    localStorage.setItem("serviceProviders", JSON.stringify(updated));
+    formData.append("provider_data", JSON.stringify(provider_data));
+    if (signupData.license) {
+      formData.append("license", signupData.license);
+    }
 
     toast.success("Registration successful! Redirecting to dashboard...");
     resetSignupData();
 
     window.location.href =
       "/auth/verify";
-
-  };
+};
 
   const handleNextStep = () => {
     const requiredFields = [
@@ -71,14 +95,13 @@ export default function Signup() {
       "region",
       "businessPhone",
       "businessEmail",
+      "license",
     ];
-    const emptyField = requiredFields.find((field) => !signupData[field]?.trim());
-
+    const emptyField = requiredFields.find((field) => !signupData[field]);
     if (emptyField) {
       toast.error("Please fill all required fields before proceeding!");
       return;
     }
-
     nextStep();
   };
 
@@ -102,16 +125,17 @@ export default function Signup() {
           </a>
         </div>
       </div>
+
       <div
         ref={rightPanelRef}
-        className="flex-[0.6] flex flex-col justify-center p-12 bg-muted"
+        className="flex-[0.6] flex flex-col justify-center p-6 bg-muted"
         style={{ height: panelHeight }}
       >
-        <div className="text-center mb-6">
+        <div className="text-center mb-2">
           <h1 className="text-2xl sm:text-3xl font-semibold">
             Join TipTop as a Service Provider
           </h1>
-          <p className="text-sm sm:text-base text-secondary/70 mt-2">
+          <p className="text-sm sm:text-base text-secondary/70 mt-1">
             Empower your service with every tip
           </p>
         </div>
@@ -143,32 +167,30 @@ export default function Signup() {
                 <Label>Business Name *</Label>
                 <Input
                   name="businessName"
-                  value={signupData.businessName}
+                  value={signupData.businessName || ""}
                   onChange={handleChange}
                   placeholder="Enter your business name"
                   required
                 />
               </div>
               <div>
-                <Label>Business Type *</Label>
+                <Label>Business Type (Category ID) *</Label>
                 <Input
                   name="businessType"
-                  value={signupData.businessType}
+                  value={signupData.businessType || ""}
                   onChange={handleChange}
-                  placeholder="Select business type"
+                  placeholder="Enter category ULID"
                   required
                 />
               </div>
-            </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label>Business Address *</Label>
                 <Input
                   name="businessAddress"
-                  value={signupData.businessAddress}
+                  value={signupData.businessAddress || ""}
                   onChange={handleChange}
-                  placeholder="Business address"
+                  placeholder="Street address"
                   required
                 />
               </div>
@@ -176,21 +198,20 @@ export default function Signup() {
                 <Label>City *</Label>
                 <Input
                   name="city"
-                  value={signupData.city}
+                  value={signupData.city || ""}
                   onChange={handleChange}
                   placeholder="City"
                   required
                 />
               </div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
               <div>
                 <Label>Region *</Label>
                 <Input
                   name="region"
-                  value={signupData.region}
+                  value={signupData.region || ""}
                   onChange={handleChange}
-                  placeholder="Select region"
+                  placeholder="Region"
                   required
                 />
               </div>
@@ -199,20 +220,19 @@ export default function Signup() {
                 <Input
                   type="tel"
                   name="businessPhone"
-                  value={signupData.businessPhone}
+                  value={signupData.businessPhone || ""}
                   onChange={handleChange}
                   placeholder="+251 9XX XXX XXX"
                   required
                 />
               </div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
               <div>
                 <Label>Business Email *</Label>
                 <Input
                   type="email"
                   name="businessEmail"
-                  value={signupData.businessEmail}
+                  value={signupData.businessEmail || ""}
                   onChange={handleChange}
                   placeholder="business@example.com"
                   required
@@ -222,21 +242,58 @@ export default function Signup() {
                 <Label>Tax ID (Optional)</Label>
                 <Input
                   name="taxId"
-                  value={signupData.taxId}
+                  value={signupData.taxId || ""}
                   onChange={handleChange}
                   placeholder="Tax identification number"
                 />
               </div>
+
+              <div>
+                <Label>Business Description</Label>
+                <Textarea
+                  name="businessDescription"
+                  value={signupData.businessDescription || ""}
+                  onChange={handleChange}
+                  placeholder="Describe your business and services"
+                />
+              </div>
+
+              <div>
+                <Label>Image URL (Optional)</Label>
+                <Input
+                  type="url"
+                  name="imageUrl"
+                  value={signupData.imageUrl || ""}
+                  onChange={handleChange}
+                  placeholder="URL to your business logo"
+                />
+              </div>
+
+              <div>
+                <Label>License File *</Label>
+                <div className="relative">
+                  <Input
+                    type="text"
+                    readOnly
+                    value={signupData.licenseName || ""}
+                    placeholder="Upload a license file..."
+                    className="pr-10 cursor-pointer"
+                    onClick={() => fileInputRef.current.click()}
+                    required={!signupData.licenseName}
+                  />
+                  <Upload className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-5 pointer-events-none" />
+                  <Input
+                    type="file"
+                    name="license"
+                    ref={fileInputRef}
+                    onChange={handleChange}
+                    className="hidden"
+                    required
+                  />
+                </div>
+              </div>
             </div>
-            <div>
-              <Label>Business Description</Label>
-              <Textarea
-                name="businessDescription"
-                value={signupData.businessDescription}
-                onChange={handleChange}
-                placeholder="Describe your business and services"
-              />
-            </div>
+
             <div className="flex flex-col sm:flex-row justify-between mt-6 gap-2">
               <Button variant="secondary" disabled>
                 Previous
@@ -260,7 +317,7 @@ export default function Signup() {
                 <Input
                   type="password"
                   name={field}
-                  value={signupData[field]}
+                  value={signupData[field] || ""}
                   onChange={handleChange}
                   placeholder={field === "password" ? "Create a strong password" : "Confirm your password"}
                   required
