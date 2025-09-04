@@ -26,7 +26,7 @@ export default function Signup() {
   const rightPanelRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  const apiUrl = process.env.API_BASE_URL;
+  const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
 
   useEffect(() => {
     const updateHeight = () => {
@@ -50,6 +50,25 @@ export default function Signup() {
     }
   };
 
+  const handleNextStep = () => {
+    const requiredFields = [
+      "businessName",
+      "businessType",
+      "businessAddress",
+      "city",
+      "region",
+      "businessPhone",
+      "businessEmail",
+      "license",
+    ];
+    const emptyField = requiredFields.find((field) => !signupData[field]);
+    if (emptyField) {
+      toast.error("Please fill all required fields before proceeding!");
+      return;
+    }
+    nextStep();
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (signupData.password !== signupData.confirmPassword) {
@@ -58,6 +77,7 @@ export default function Signup() {
     }
 
     const formData = new FormData();
+
     const provider_data = {
       name: signupData.businessName || "",
       category_id: signupData.businessType || "",
@@ -80,7 +100,7 @@ export default function Signup() {
     }
 
     try {
-      const response = await fetch(`${apiUrl}/api/service-providers/register`, {
+      const response = await fetch(`${apiUrl}/service-providers/register`, {
         method: "POST",
         body: formData,
       });
@@ -88,7 +108,9 @@ export default function Signup() {
       const data = await response.json();
 
       if (response.ok) {
-        toast.success(data.message || "Registration successful! Redirecting to dashboard...");
+        toast.success(
+          data.message || "Registration successful! Redirecting to dashboard..."
+        );
         resetSignupData();
         router.push("/dashboard/provider");
       } else {
@@ -100,27 +122,10 @@ export default function Signup() {
         }
       }
     } catch (error) {
-      toast.error("An unexpected error occurred. Please check your network connection.");
+      toast.error(
+        "An unexpected error occurred. Please check your network connection."
+      );
     }
-  };
-
-  const handleNextStep = () => {
-    const requiredFields = [
-      "businessName",
-      "businessType",
-      "businessAddress",
-      "city",
-      "region",
-      "businessPhone",
-      "businessEmail",
-      "license",
-    ];
-    const emptyField = requiredFields.find((field) => !signupData[field]);
-    if (emptyField) {
-      toast.error("Please fill all required fields before proceeding!");
-      return;
-    }
-    nextStep();
   };
 
   return (
@@ -129,7 +134,10 @@ export default function Signup() {
         className="hidden md:flex flex-[0.4] relative p-12 justify-center items-center bg-cover bg-center rounded-l-2xl"
         style={{ backgroundImage: "url('/backgroundAuth.jpg')", height: panelHeight }}
       >
-        <div className="absolute top-4 left-4 cursor-pointer" onClick={() => router.push("/")}>
+        <div
+          className="absolute top-4 left-4 cursor-pointer"
+          onClick={() => router.push("/")}
+        >
           <ArrowLeft className="w-6 h-6 text-white hover:text-accent transition" />
         </div>
         <div className="flex flex-col items-center text-center gap-4">
@@ -192,16 +200,15 @@ export default function Signup() {
                 />
               </div>
               <div>
-                <Label>Business Type (Category ID) *</Label>
+                <Label>Business Type *</Label>
                 <Input
                   name="businessType"
                   value={signupData.businessType || ""}
                   onChange={handleChange}
-                  placeholder="Enter category ULID"
+                  placeholder="Enter business type (e.g., Restaurant)"
                   required
                 />
               </div>
-
               <div>
                 <Label>Business Address *</Label>
                 <Input
@@ -222,7 +229,6 @@ export default function Signup() {
                   required
                 />
               </div>
-
               <div>
                 <Label>Region *</Label>
                 <Input
@@ -244,7 +250,6 @@ export default function Signup() {
                   required
                 />
               </div>
-
               <div>
                 <Label>Business Email *</Label>
                 <Input
@@ -265,7 +270,6 @@ export default function Signup() {
                   placeholder="Tax identification number"
                 />
               </div>
-
               <div>
                 <Label>Business Description</Label>
                 <Textarea
@@ -275,7 +279,6 @@ export default function Signup() {
                   placeholder="Describe your business and services"
                 />
               </div>
-
               <div>
                 <Label>Image URL (Optional)</Label>
                 <Input
@@ -286,7 +289,6 @@ export default function Signup() {
                   placeholder="URL to your business logo"
                 />
               </div>
-
               <div>
                 <Label>License File *</Label>
                 <div className="relative">
