@@ -39,27 +39,24 @@ export const addEmployeeAPI = async (employee, token, count = 1) => {
   }
 };
 
-export const updateEmployeeAPI = async (id, employee, token) => {
-  try {
-    const res = await fetch(`${API_URL}/employees-data/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify(employee),
-    });
+export const updateEmployeeAPI = async (id, data, token) => {
+  const res = await fetch(`${API_URL}/service-providers/employees/${id}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(data),
+  });
 
-    const data = await res.json();
-    if (!res.ok) {
-      throw new Error(data.message || 'Failed to update employee');
-    }
-    return data;
-  } catch (err) {
-    console.error('Update Employee API Error:', err);
-    throw err;
+  if (!res.ok) {
+    const errData = await res.json();
+    throw new Error(errData.message || "Failed to update employee");
   }
+
+  return await res.json();
 };
+
 
 export const toggleEmployeeStatusAPI = async (employeeId, newStatus, token) => {
   try {
@@ -98,30 +95,4 @@ export const toggleEmployeeStatusAPI = async (employeeId, newStatus, token) => {
 };
 
 
-export const deleteEmployeeAPI = async (id, token) => {
-  try {
-    const res = await fetch(`${API_URL}/employees-data/${id}`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-    });
 
-    if (!res.ok) {
-      let errorMsg = 'Failed to delete employee';
-      try {
-        const errData = await res.json();
-        errorMsg = errData.message || errorMsg;
-      } catch {
-        console.warn('No JSON response from delete endpoint.');
-      }
-      throw new Error(errorMsg);
-    }
-
-    // Laravel might return 204 with empty body, so return a success message
-    return { message: 'Employee deleted successfully' };
-  } catch (err) {
-    console.error('Delete Employee API Error:', err);
-    throw err;
-  }
-};
