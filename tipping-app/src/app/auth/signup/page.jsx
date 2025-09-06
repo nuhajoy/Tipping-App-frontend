@@ -78,6 +78,7 @@ export default function Signup() {
 
     const formData = new FormData();
 
+
     const provider_data = {
       name: signupData.businessName || "",
       category_id: signupData.businessType || "",
@@ -100,10 +101,11 @@ export default function Signup() {
     }
 
     try {
-      const response = await fetch(`${apiUrl}/service-providers/register`, {
-        method: "POST",
-        body: formData,
-      });
+     const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/service-providers/register`, {
+  method: "POST",
+  body: formData,
+});
+
 
       const data = await response.json();
 

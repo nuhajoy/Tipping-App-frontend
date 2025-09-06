@@ -24,7 +24,7 @@ export default function LandingPage() {
       title: "Instant Tipping",
       desc: "Customers enter the code, choose amount, and pay securely through Chapa.",
       button: "Send A Tip",
-      link: "/send-tip",
+      link: "/Tip",
       image: "/instant.png",
     },
   ];
@@ -60,13 +60,13 @@ export default function LandingPage() {
   ];
 
   return (
-    <main className="min-h-screen flex flex-col bg-white text-[#1A1A1A] pt-[80px]">
+    <main className="font-serif min-h-screen flex flex-col bg-white text-[#1A1A1A] pt-[80px] ">
       <Header />
 
       {/* Hero Section */}
       <section className="flex flex-col md:flex-row items-center justify-between px-6 md:px-20 py-20">
         <div className="md:w-1/2 text-left">
-          <h1 className="text-5xl font-bold mb-4">
+          <h1 className=" text-4xl font-bold mb-4">
             Revolutionized Tipping for Businesses
           </h1>
           <p className="text-lg text-[#666] mb-6">
@@ -79,7 +79,7 @@ export default function LandingPage() {
                 Register your service
               </Button>
             </Link>
-            <Link href="/send-tip">
+            <Link href="/Tip">
               <Button className="bg-[#F5F5F5] text-[#00C853] hover:bg-[#e0e0e0] rounded-full px-6 py-6 border border-[#71FF71]">
                 Send a tip
               </Button>
