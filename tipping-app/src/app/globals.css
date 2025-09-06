@@ -34,6 +34,11 @@
   --muted: #ffffff;
   --muted-foreground: rgba(0,0,0,0.6);
 
+  --slight-accent: #edbb3e;
+
+  --error:#ff0000;
+  
+
   --card: var(--background);
   --card-foreground: var(--foreground);
   --popover: var(--background);
@@ -94,6 +99,6 @@
     @apply border-border;
   }
    body {
-   @apply bg-background text-foreground min-h-screen;
+   @apply bg-background text-foreground;
   }
 }

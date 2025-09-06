@@ -1,12 +1,24 @@
 import { create } from "zustand";
 import { toast } from "sonner"; 
 
-export const useAdminStore = create((set) => ({
+export const useAdminStore = create((set, get) => ({
   providers: [],
   expandedRow: null,
   editRow: null,
   searchQuery: "",
   activeTab: "providers",
+
+  loading: false,
+  setLoading: (val) => set({ loading: val }),
+
+  error: "",
+  setError: (val) => set({ error: val }),
+
+  hover: null,
+  setHover: (val) => set({ hover: val }),
+
+  length: 0,
+  setLength: (val) => set({ length: val }),
 
   setProviders: (newProviders) => {
     set({ providers: newProviders });
@@ -21,18 +33,23 @@ export const useAdminStore = create((set) => ({
   setSearchQuery: (query) => set({ searchQuery: query }),
   setActiveTab: (tab) => set({ activeTab: tab }),
 
-  loadProviders: () => {
-    const stored = localStorage.getItem("serviceProviders");
-    if (stored) {
-      try {
+  
+  loadProviders: async () => {
+    set({ loading: true, error: "" });
+    try {
+      const stored = localStorage.getItem("serviceProviders");
+      if (stored) {
         const parsed = JSON.parse(stored);
         set({ providers: Array.isArray(parsed) ? parsed : [parsed] });
-      } catch (err) {
-        console.error("Failed to parse service providers", err);
       }
+    } catch (err) {
+      console.error("Failed to load providers", err);
+      set({ error: "Failed to load providers." });
+    } finally {
+      set({ loading: false });
     }
   },
-  
+
   handleApprove: (id) => {
     set((state) => {
       const updated = state.providers.map((p) =>
