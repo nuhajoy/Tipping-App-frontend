@@ -1,93 +1,80 @@
 import { API_URL } from './config';
 
 // Generic fetch helper
-const fetchForm = async (url, options = {}) => {
-  const res = await fetch(url, options);
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`${res.status} - ${text}`);
-  }
-  return res.json();
-};
-
-// **Updated** Fetch all employees to handle errors gracefully
-export const fetchEmployees = async (token) => {
-  const url = `${API_URL}/service-providers/employees`;
-  const options = {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
-  };
-
-  try {
+const fetchJson = async (url, options = {}) => {
     const res = await fetch(url, options);
-
+    const data = await res.json();
     if (!res.ok) {
-      const text = await res.text();
-      // Throwing the error here will still get caught below
-      throw new Error(`${res.status} - ${text}`);
+        const error = new Error(data.message || 'An error occurred');
+        error.statusCode = res.status;
+        error.errors = data.errors || null;
+        throw error;
     }
-
-    const textData = await res.text();
-
-    try {
-      const jsonData = JSON.parse(textData);
-      return jsonData;
-    } catch (e) {
-      console.warn("Response was not valid JSON. Trying to handle URL-encoded data.");
-      
-      const params = new URLSearchParams(textData);
-      const employees = [];
-      const employeesDataMap = {};
-
-      for (const [key, value] of params.entries()) {
-        const parts = key.split('_');
-        
-        if (parts[0] === 'employee') {
-          const index = parts[1];
-          const field = parts.slice(2).join('_');
-          
-          if (!employeesDataMap[index]) {
-            employeesDataMap[index] = {};
-          }
-          employeesDataMap[index][field] = value;
-        }
-      }
-
-      for (const key in employeesDataMap) {
-        employees.push(employeesDataMap[key]);
-      }
-      
-      return { employees };
-    }
-  } catch (error) {
-    console.error("Error fetching employees:", error);
-    // **Key Change:** Return an empty object to prevent a crash
-    // This allows the component to set the state to an empty array
-    // and display 0 employees instead of an error.
-    return { employees: [] };
-  }
+    return data;
 };
 
-// Register employees by count
-export const registerEmployee = async ({ count }, token) => {
-  const formData = new FormData();
-  formData.append("count", count);
-
-  return fetchForm(`${API_URL}/service-providers/employees/register`, {
-    method: "POST",
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
-    body: formData,
-  });
+// Fetch all employees
+export const fetchEmployees = async (token) => {
+    const url = `${API_URL}/service-providers/employees`;
+    const options = {
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json',
+        },
+    };
+    return fetchJson(url, options);
 };
 
-// Toggle employee active/inactive
-export const toggleEmployeeStatusAPI = async (employeeId, newStatus, token) => {
-  const endpoint = newStatus ? 'activate' : 'deactivate';
-  return fetchForm(`${API_URL}/service-providers/employees/${endpoint}/${employeeId}`, {
-    method: 'PATCH',
-    headers: { 'Authorization': `Bearer ${token}` },
-  });
+export const registerEmployeesAPI = async ({ count }, token) => {
+    return fetchJson(`${API_URL}/service-providers/employees/register`, {
+        method: "POST",
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ count }),
+    });
+};
+
+
+export const toggleEmployeeStatusAPI = async (employeeId, status, token) => {
+    return fetchJson(`${API_URL}/service-providers/employees/${status}/${employeeId}`, {
+        method: 'PATCH',
+        headers: {
+            'Accept': 'application/json',
+            'Authorization': `Bearer ${token}`,
+        },
+    });
+};
+
+// Fetch employee summary
+export const fetchEmployeeSummary = async (token) => {
+    return fetchJson(`${API_URL}/service-providers/employees/summary`, {
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json',
+        },
+    });
+};
+
+// Fetch provider profile
+export const fetchProfile = async (token) => {
+    return fetchJson(`${API_URL}/service-providers/profile`, {
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json',
+        },
+    });
+};
+
+// Logout
+export const logoutAPI = async (token) => {
+    return fetchJson(`${API_URL}/service-providers/logout`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json',
+        },
+    });
 };
