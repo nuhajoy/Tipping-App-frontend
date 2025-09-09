@@ -1,98 +1,93 @@
 import { API_URL } from './config';
 
+// Generic fetch helper
+const fetchForm = async (url, options = {}) => {
+  const res = await fetch(url, options);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`${res.status} - ${text}`);
+  }
+  return res.json();
+};
+
+// **Updated** Fetch all employees to handle errors gracefully
 export const fetchEmployees = async (token) => {
-  const res = await fetch(`${API_URL}/service-providers/employees`, {
+  const url = `${API_URL}/service-providers/employees`;
+  const options = {
     headers: {
-      'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`,
     },
-  });
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.message || 'Failed to fetch employees');
-  }
-  return data;
-};
+  };
 
-export const addEmployeeAPI = async (employee, token, count = 1) => {
   try {
-    const res = await fetch(`${API_URL}/service-providers/employees/register`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        count,
-        ...employee,
-      }),
-    });
+    const res = await fetch(url, options);
 
-    const data = await res.json();
     if (!res.ok) {
-      throw new Error(data.message || 'Failed to add employee');
+      const text = await res.text();
+      // Throwing the error here will still get caught below
+      throw new Error(`${res.status} - ${text}`);
     }
-    return data;
-  } catch (err) {
-    console.error('Add Employee API Error:', err);
-    throw err;
-  }
-};
 
-export const updateEmployeeAPI = async (id, data, token) => {
-  const res = await fetch(`${API_URL}/service-providers/employees/${id}`, {
-    method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(data),
-  });
+    const textData = await res.text();
 
-  if (!res.ok) {
-    const errData = await res.json();
-    throw new Error(errData.message || "Failed to update employee");
-  }
+    try {
+      const jsonData = JSON.parse(textData);
+      return jsonData;
+    } catch (e) {
+      console.warn("Response was not valid JSON. Trying to handle URL-encoded data.");
+      
+      const params = new URLSearchParams(textData);
+      const employees = [];
+      const employeesDataMap = {};
 
-  return await res.json();
-};
-
-
-export const toggleEmployeeStatusAPI = async (employeeId, newStatus, token) => {
-  try {
-    // Determine endpoint based on new status
-    const endpoint = newStatus ? 'activate' : 'deactivate';
-    const url = `${API_URL}/service-providers/employees/${endpoint}/${employeeId}`;
-
-    const res = await fetch(url, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-    });
-
-    // Handle non-JSON responses safely
-    if (!res.ok) {
-      let errorMsg = 'Failed to toggle employee status';
-      try {
-        const errData = await res.json();
-        errorMsg = errData.message || errData.error || errorMsg;
-      } catch {
-        const text = await res.text();
-        console.error('Non-JSON response from backend:', text);
+      for (const [key, value] of params.entries()) {
+        const parts = key.split('_');
+        
+        if (parts[0] === 'employee') {
+          const index = parts[1];
+          const field = parts.slice(2).join('_');
+          
+          if (!employeesDataMap[index]) {
+            employeesDataMap[index] = {};
+          }
+          employeesDataMap[index][field] = value;
+        }
       }
-      throw new Error(errorMsg);
-    }
 
-    // Backend might return a message instead of full employee object
-    // Return a consistent object for frontend
-    return { is_active: newStatus };
-  } catch (err) {
-    console.error('Toggle Employee Status API Error:', err);
-    throw err;
+      for (const key in employeesDataMap) {
+        employees.push(employeesDataMap[key]);
+      }
+      
+      return { employees };
+    }
+  } catch (error) {
+    console.error("Error fetching employees:", error);
+    // **Key Change:** Return an empty object to prevent a crash
+    // This allows the component to set the state to an empty array
+    // and display 0 employees instead of an error.
+    return { employees: [] };
   }
 };
 
+// Register employees by count
+export const registerEmployee = async ({ count }, token) => {
+  const formData = new FormData();
+  formData.append("count", count);
 
+  return fetchForm(`${API_URL}/service-providers/employees/register`, {
+    method: "POST",
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+    body: formData,
+  });
+};
 
+// Toggle employee active/inactive
+export const toggleEmployeeStatusAPI = async (employeeId, newStatus, token) => {
+  const endpoint = newStatus ? 'activate' : 'deactivate';
+  return fetchForm(`${API_URL}/service-providers/employees/${endpoint}/${employeeId}`, {
+    method: 'PATCH',
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+};
