@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { useRouter } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -10,7 +9,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -18,15 +16,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-export default function AdminOverview() {
-  const router = useRouter();
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
-  const [overview, setOverview] = useState(null);
+export default function TransactionsPage() {
   const [tips, setTips] = useState([]);
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
   const [selectedTip, setSelectedTip] = useState(null);
   const [selectedPayment, setSelectedPayment] = useState(null);
 
@@ -38,22 +34,10 @@ export default function AdminOverview() {
       return;
     }
 
-    const fetchOverview = async () => {
+    const fetchTransactions = async () => {
       try {
-        const overviewRes = await axios.get(
-          "http://127.0.0.1:8000/api/admin/reports/overview",
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        let overviewData = overviewRes.data;
-        if (typeof overviewData === "string") {
-          overviewData = JSON.parse(
-            overviewData.substring(overviewData.indexOf("{"))
-          );
-        }
-        setOverview(overviewData);
-
         const tipsRes = await axios.get(
-          "http://127.0.0.1:8000/api/admin/reports/tips?per_page=3",
+          `${API_BASE_URL}/admin/reports/tips?per_page=1000`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         let tipsData = tipsRes.data;
@@ -63,67 +47,34 @@ export default function AdminOverview() {
         setTips(tipsData.data || []);
 
         const paymentsRes = await axios.get(
-          "http://127.0.0.1:8000/api/admin/reports/payments?per_page=3",
+          `${API_BASE_URL}/admin/reports/payments?per_page=1000`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         let paymentsData = paymentsRes.data;
         if (typeof paymentsData === "string") {
-          paymentsData = JSON.parse(
-            paymentsData.substring(paymentsData.indexOf("{"))
-          );
+          paymentsData = JSON.parse(paymentsData.substring(paymentsData.indexOf("{")));
         }
         setPayments(paymentsData.data || []);
       } catch (err) {
         console.error(err.response || err);
-        setError("Failed to load dashboard data. Please try again.");
+        setError("Failed to fetch transactions. Please try again.");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchOverview();
+    fetchTransactions();
   }, []);
 
-  if (loading)
-    return <p className="text-center py-10">Loading dashboard...</p>;
-  if (error)
-    return (
-      <p className="text-center text-red-500 py-10">{error}</p>
-    );
+  if (loading) return <p className="text-center py-10">Loading transactions...</p>;
+  if (error) return <p className="text-center text-red-500 py-10">{error}</p>;
 
   return (
     <div className="space-y-8">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {[
-          { title: "Total Gross Tips", value: `${overview?.total_gross_tips ?? "-"} ETB` },
-          { title: "Platform Revenue", value: `${overview?.platform_revenue ?? "-"} ETB` },
-          { title: "Chapa Fees", value: `${overview?.chapa_fees ?? "-"} ETB` },
-          { title: "Net to Employees", value: `${overview?.net_to_employees ?? "-"} ETB` },
-          { title: "Active Providers", value: overview?.active_providers ?? "-" },
-          { title: "Active Employees", value: overview?.active_employees ?? "-" },
-        ].map((stat, i) => (
-          <Card key={i} className="rounded-2xl shadow">
-            <CardHeader>
-              <CardTitle className="text-sm text-muted-foreground">{stat.title}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold text-secondary">{stat.value}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
 
-      {/* Recent Tips */}
       <Card className="rounded-2xl shadow">
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Recent Tips</CardTitle>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => router.push("/dashboard/admin/transactions")}
-          >
-            View All
-          </Button>
+          <CardTitle>All Tips</CardTitle>
         </CardHeader>
         <CardContent>
           {tips.length === 0 ? (
@@ -132,7 +83,7 @@ export default function AdminOverview() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>ID</TableHead>
+                  <TableHead>Tip ID</TableHead>
                   <TableHead>Amount</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Created At</TableHead>
@@ -157,17 +108,9 @@ export default function AdminOverview() {
         </CardContent>
       </Card>
 
-      {/* Recent Payments */}
       <Card className="rounded-2xl shadow">
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Recent Payments</CardTitle>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => router.push("/dashboard/admin/transactions")}
-          >
-            View All
-          </Button>
+          <CardTitle>All Payments</CardTitle>
         </CardHeader>
         <CardContent>
           {payments.length === 0 ? (
@@ -203,7 +146,6 @@ export default function AdminOverview() {
         </CardContent>
       </Card>
 
-      {/* Tip Dialog */}
       <Dialog open={!!selectedTip} onOpenChange={() => setSelectedTip(null)}>
         <DialogContent>
           <DialogHeader>
@@ -223,7 +165,6 @@ export default function AdminOverview() {
         </DialogContent>
       </Dialog>
 
-      {/* Payment Dialog */}
       <Dialog open={!!selectedPayment} onOpenChange={() => setSelectedPayment(null)}>
         <DialogContent>
           <DialogHeader>
