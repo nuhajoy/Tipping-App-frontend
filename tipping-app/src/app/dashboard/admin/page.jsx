@@ -1,223 +1,248 @@
 "use client";
 
-import { useAdminStore } from "@/store/adminStore";
-import { useEffect, useRef, useState } from "react";
-import { Card } from "@/components/ui/card";
+import { useEffect, useState } from "react";
+import axios from "axios";
+import { useRouter } from "next/navigation";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
-const StatCard = ({ title, value }) => (
-  <Card className="p-4 rounded-2xl shadow-sm hover:shadow-md transform hover:-translate-y-0.5 transition-all duration-300">
-    <h4 className="text-sm text-muted-foreground mb-2">{title}</h4>
-    <p className="text-xl font-bold">{value}</p>
-  </Card>
-);
-const useAdminAnalytics = () => {
-  const { providers, loadProviders } = useAdminStore();
+export default function AdminOverview() {
+  const router = useRouter();
+
+  const [overview, setOverview] = useState(null);
+  const [tips, setTips] = useState([]);
+  const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const [selectedTip, setSelectedTip] = useState(null);
+  const [selectedPayment, setSelectedPayment] = useState(null);
+
   useEffect(() => {
-    const fetchAnalytics = async () => {
+    const token = localStorage.getItem("auth_token");
+    if (!token) {
+      setError("No admin token found. Please log in again.");
+      setLoading(false);
+      return;
+    }
+
+    const fetchOverview = async () => {
       try {
-        setLoading(true);
-        await loadProviders();
+        const overviewRes = await axios.get(
+          "http://127.0.0.1:8000/api/admin/reports/overview",
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        let overviewData = overviewRes.data;
+        if (typeof overviewData === "string") {
+          overviewData = JSON.parse(
+            overviewData.substring(overviewData.indexOf("{"))
+          );
+        }
+        setOverview(overviewData);
+
+        const tipsRes = await axios.get(
+          "http://127.0.0.1:8000/api/admin/reports/tips?per_page=3",
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        let tipsData = tipsRes.data;
+        if (typeof tipsData === "string") {
+          tipsData = JSON.parse(tipsData.substring(tipsData.indexOf("{")));
+        }
+        setTips(tipsData.data || []);
+
+        const paymentsRes = await axios.get(
+          "http://127.0.0.1:8000/api/admin/reports/payments?per_page=3",
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        let paymentsData = paymentsRes.data;
+        if (typeof paymentsData === "string") {
+          paymentsData = JSON.parse(
+            paymentsData.substring(paymentsData.indexOf("{"))
+          );
+        }
+        setPayments(paymentsData.data || []);
       } catch (err) {
-        console.error("Failed to fetch admin data:", err);
-        setError("Failed to load data. Please try again.");
+        console.error(err.response || err);
+        setError("Failed to load dashboard data. Please try again.");
       } finally {
         setLoading(false);
       }
     };
-    fetchAnalytics();
-  }, [loadProviders]);
-  const mockAnalytics = {
-    totalTips: 16500,
-    withdrawn: 4500,
-    platformRevenue: 12000,
-    activeProviders: providers.length,
-    totalEmployees: 12,
-  };
 
-  const mockChartData = [
-    { label: "Week 1", value: 2000 },
-    { label: "Week 2", value: 4000 },
-    { label: "Week 3", value: 7000 },
-    { label: "Week 4", value: 10000 },
-    { label: "Week 5", value: 13000 },
-    { label: "Week 6", value: 16500 },
-  ];
+    fetchOverview();
+  }, []);
 
-  return {
-    analytics: mockAnalytics,
-    chartData: mockChartData,
-    loading,
-    error,
-  };
-};
-
-export default function AdminDashboard() {
-  const { analytics, chartData, loading, error } = useAdminAnalytics();
-  const pathRef = useRef(null);
-  const [pathLength, setPathLength] = useState(0);
-  const [hoveredPoint, setHoveredPoint] = useState(null);
-
-  const svgMetrics = {
-    width: 720,
-    height: 220,
-    padding: { left: 48, right: 16, top: 16, bottom: 28 },
-  };
-
-  const { width, height, padding } = svgMetrics;
-  const innerWidth = width - padding.left - padding.right;
-  const innerHeight = height - padding.top - padding.bottom;
-  const maxMoney = Math.max(...chartData.map((d) => d.value));
-  const getX = (i) => padding.left + (i / (chartData.length - 1)) * innerWidth;
-  const getY = (val) => padding.top + (1 - val / maxMoney) * innerHeight;
-  const points = chartData.map((d, i) => `${getX(i)},${getY(d.value)}`).join(" ");
-
-  useEffect(() => {
-    if (pathRef.current) {
-      setPathLength(pathRef.current.getTotalLength());
-    }
-  }, [points]);
-
-  if (loading) return <div>Loading dashboard...</div>;
-  if (error) return <div>Error: {error}</div>;
-
-  const transactionData = {
-    "Recent Transaction": "500 ETB",
-    "Total Transactions": `${analytics.totalTips} ETB`,
-    "Platform Revenue": `${analytics.platformRevenue} ETB`,
-    "Withdrawn Money": `${analytics.withdrawn} ETB`,
-  };
+  if (loading)
+    return <p className="text-center py-10">Loading dashboard...</p>;
+  if (error)
+    return (
+      <p className="text-center text-red-500 py-10">{error}</p>
+    );
 
   return (
-    <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-2">
-        {Object.entries(transactionData).map(([title, value]) => (
-          <StatCard key={title} title={title} value={value} />
+    <div className="space-y-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {[
+          { title: "Total Gross Tips", value: `${overview?.total_gross_tips ?? "-"} ETB` },
+          { title: "Platform Revenue", value: `${overview?.platform_revenue ?? "-"} ETB` },
+          { title: "Chapa Fees", value: `${overview?.chapa_fees ?? "-"} ETB` },
+          { title: "Net to Employees", value: `${overview?.net_to_employees ?? "-"} ETB` },
+          { title: "Active Providers", value: overview?.active_providers ?? "-" },
+          { title: "Active Employees", value: overview?.active_employees ?? "-" },
+        ].map((stat, i) => (
+          <Card key={i} className="rounded-2xl shadow">
+            <CardHeader>
+              <CardTitle className="text-sm text-muted-foreground">{stat.title}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold text-secondary">{stat.value}</p>
+            </CardContent>
+          </Card>
         ))}
       </div>
 
-      <Card className="p-4 rounded-2xl shadow-sm hover:shadow-md transition-shadow duration-200">
-        <h3 className="text-lg font-semibold mb-4">Platform Growth (ETB)</h3>
-        <div className="relative w-full overflow-hidden">
-          {hoveredPoint && (
-            <div
-              className="absolute z-10 bg-card border border-border rounded-lg shadow px-2 py-1 text-xs pointer-events-none"
-              style={{
-                left: Math.min(Math.max(hoveredPoint.x - 40, 8), width - 90),
-                top: Math.max(hoveredPoint.y - 36, 8),
-              }}
-            >
-              <div className="font-semibold">{hoveredPoint.label}</div>
-              <div className="text-muted-foreground">{hoveredPoint.value.toLocaleString()} ETB</div>
+      {/* Recent Tips */}
+      <Card className="rounded-2xl shadow">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Recent Tips</CardTitle>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push("/dashboard/admin/transactions")}
+          >
+            View All
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {tips.length === 0 ? (
+            <p className="text-muted-foreground">No tips found.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>ID</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Created At</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {tips.map((tip) => (
+                  <TableRow
+                    key={tip.id}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => setSelectedTip(tip)}
+                  >
+                    <TableCell>{tip.id}</TableCell>
+                    <TableCell className="text-secondary font-semibold">{tip.amount} ETB</TableCell>
+                    <TableCell>{tip.status}</TableCell>
+                    <TableCell>{tip.created_at ? new Date(tip.created_at).toLocaleString() : "-"}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Recent Payments */}
+      <Card className="rounded-2xl shadow">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Recent Payments</CardTitle>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push("/dashboard/admin/transactions")}
+          >
+            View All
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {payments.length === 0 ? (
+            <p className="text-muted-foreground">No payments found.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Payment ID</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Chapa Fee</TableHead>
+                  <TableHead>Service Fee</TableHead>
+                  <TableHead>Created At</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {payments.map((payment) => (
+                  <TableRow
+                    key={payment.id}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => setSelectedPayment(payment)}
+                  >
+                    <TableCell>{payment.id}</TableCell>
+                    <TableCell className="text-secondary font-semibold">{payment.amount} ETB</TableCell>
+                    <TableCell>{payment.chapa_fee} ETB</TableCell>
+                    <TableCell>{payment.service_fee} ETB</TableCell>
+                    <TableCell>{payment.created_at ? new Date(payment.created_at).toLocaleString() : "-"}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Tip Dialog */}
+      <Dialog open={!!selectedTip} onOpenChange={() => setSelectedTip(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Tip Details</DialogTitle>
+          </DialogHeader>
+          {selectedTip && (
+            <div className="space-y-2 text-sm">
+              <p><strong>ID:</strong> {selectedTip.id}</p>
+              <p><strong>Employee ID:</strong> {selectedTip.employee_id}</p>
+              <p><strong>Service Provider ID:</strong> {selectedTip.service_provider_id}</p>
+              <p><strong>Amount:</strong> {selectedTip.amount} ETB</p>
+              <p><strong>Status:</strong> {selectedTip.status}</p>
+              <p><strong>Created At:</strong> {selectedTip.created_at ? new Date(selectedTip.created_at).toLocaleString() : "-"}</p>
+              <p><strong>Updated At:</strong> {selectedTip.updated_at ? new Date(selectedTip.updated_at).toLocaleString() : "-"}</p>
             </div>
           )}
-          <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-64">
-            <line
-              x1={padding.left}
-              y1={height - padding.bottom}
-              x2={width - padding.right}
-              y2={height - padding.bottom}
-              stroke="var(--border)"
-              strokeWidth="1"
-            />
-            <line
-              x1={padding.left}
-              y1={padding.top}
-              x2={padding.left}
-              y2={height - padding.bottom}
-              stroke="var(--border)"
-              strokeWidth="1"
-            />
-            {[0, 0.25, 0.5, 0.75, 1].map((t, i) => {
-              const gy = padding.top + (1 - t) * innerHeight;
-              return (
-                <line
-                  key={`grid-line-${i}`}
-                  x1={padding.left}
-                  x2={width - padding.right}
-                  y1={gy}
-                  y2={gy}
-                  stroke="var(--input)"
-                  strokeWidth="1"
-                />
-              );
-            })}
-            
-            <polyline
-              ref={pathRef}
-              fill="none"
-              stroke="var(--foreground)"
-              strokeWidth="3"
-              points={points}
-              style={{
-                strokeDasharray: pathLength,
-                strokeDashoffset: pathLength,
-                animation: "dash-anim 1.2s ease forwards",
-              }}
-            />
-            <style>{`@keyframes dash-anim { to { stroke-dashoffset: 0; } }`}</style>
+        </DialogContent>
+      </Dialog>
 
-            {chartData.map((d, i) => {
-              const cx = getX(i);
-              const cy = getY(d.value);
-              return (
-                <g key={`data-point-${i}`}>
-                  <circle
-                    cx={cx}
-                    cy={cy}
-                    r="5"
-                    fill="var(--accent)"
-                    className="transition-colors duration-150"
-                    onMouseEnter={() =>
-                      setHoveredPoint({ i, x: cx, y: cy, value: d.value, label: d.label })
-                    }
-                    onMouseLeave={() => setHoveredPoint(null)}
-                  />
-                  <circle
-                    cx={cx}
-                    cy={cy}
-                    r="12"
-                    fill="transparent"
-                    onMouseEnter={() =>
-                      setHoveredPoint({ i, x: cx, y: cy, value: d.value, label: d.label })
-                    }
-                    onMouseLeave={() => setHoveredPoint(null)}
-                  />
-                </g>
-              );
-            })}
-            
-            {chartData.map((d, i) => (
-              <text
-                key={`x-label-${i}`}
-                x={getX(i)}
-                y={height - padding.bottom + 18}
-                fontSize="12"
-                textAnchor="middle"
-                fill="var(--muted-foreground)"
-              >
-                {d.label}
-              </text>
-            ))}
-           
-            {[0, 5000, 10000, 15000, maxMoney].map((val, i) => (
-              <text
-                key={`y-label-${i}`}
-                x={padding.left - 8}
-                y={getY(val)}
-                fontSize="12"
-                textAnchor="end"
-                dominantBaseline="middle"
-                fill="var(--muted-foreground)"
-              >
-                {val}
-              </text>
-            ))}
-          </svg>
-        </div>
-      </Card>
-    </>
+      {/* Payment Dialog */}
+      <Dialog open={!!selectedPayment} onOpenChange={() => setSelectedPayment(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Payment Details</DialogTitle>
+          </DialogHeader>
+          {selectedPayment && (
+            <div className="space-y-2 text-sm">
+              <p><strong>ID:</strong> {selectedPayment.id}</p>
+              <p><strong>Employee ID:</strong> {selectedPayment.employee_id}</p>
+              <p><strong>Tip ID:</strong> {selectedPayment.tip_id}</p>
+              <p><strong>Amount:</strong> {selectedPayment.amount} ETB</p>
+              <p><strong>Chapa Fee:</strong> {selectedPayment.chapa_fee} ETB</p>
+              <p><strong>Service Fee:</strong> {selectedPayment.service_fee} ETB</p>
+              <p><strong>Created At:</strong> {selectedPayment.created_at ? new Date(selectedPayment.created_at).toLocaleString() : "-"}</p>
+              <p><strong>Updated At:</strong> {selectedPayment.updated_at ? new Date(selectedPayment.updated_at).toLocaleString() : "-"}</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }

@@ -1,96 +1,189 @@
 "use client";
 
-import { useAdminStore } from "@/store/adminStore";
-import { Card } from "@/components/ui/card";
+import { useEffect, useState } from "react";
+import axios from "axios";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
-const useTransactionLogic = () => {
-  const { providers, expandedRow, setExpandedRow } = useAdminStore();
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
-  const stats = [
-    { title: "Total Transactions", value: "16,500 ETB" },
-    { title: "Top Performer", value: "1,200 ETB" },
-    { title: "Most Active Provider", value: "950 ETB" },
-  ];
+export default function TransactionsPage() {
+  const [tips, setTips] = useState([]);
+  const [payments, setPayments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selectedTip, setSelectedTip] = useState(null);
+  const [selectedPayment, setSelectedPayment] = useState(null);
 
-  const transactions = [
-    { id: 1, title: "Tip to Abebe", amount: "+250 ETB", date: "Aug 28, 2025" },
-    { id: 2, title: "Tip to Kebede", amount: "+500 ETB", date: "Aug 27, 2025" },
-    { id: 3, title: "Tip to Selam", amount: "+150 ETB", date: "Aug 26, 2025" },
-    { id: 4, title: "Tip to Abeba", amount: "+1,000 ETB", date: "Aug 25, 2025" },
-  ];
+  useEffect(() => {
+    const token = localStorage.getItem("auth_token");
+    if (!token) {
+      setError("No admin token found. Please log in again.");
+      setLoading(false);
+      return;
+    }
 
-  const toggleExpandedRow = (id) => {
-    setExpandedRow(expandedRow === id ? null : id);
-  };
+    const fetchTransactions = async () => {
+      try {
+        const tipsRes = await axios.get(
+          `${API_BASE_URL}/admin/reports/tips?per_page=1000`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        let tipsData = tipsRes.data;
+        if (typeof tipsData === "string") {
+          tipsData = JSON.parse(tipsData.substring(tipsData.indexOf("{")));
+        }
+        setTips(tipsData.data || []);
 
-  return { stats, transactions, providers, expandedRow, toggleExpandedRow };
-};
+        const paymentsRes = await axios.get(
+          `${API_BASE_URL}/admin/reports/payments?per_page=1000`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        let paymentsData = paymentsRes.data;
+        if (typeof paymentsData === "string") {
+          paymentsData = JSON.parse(paymentsData.substring(paymentsData.indexOf("{")));
+        }
+        setPayments(paymentsData.data || []);
+      } catch (err) {
+        console.error(err.response || err);
+        setError("Failed to fetch transactions. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-const StatCard = ({ title, value }) => (
-  <Card className="p-4 rounded-2xl shadow-sm hover:shadow-md transition-shadow duration-200">
-    <p className="text-sm text-muted-foreground">{title}</p>
-    <p className="text-2xl font-bold">{value}</p>
-  </Card>
-);
+    fetchTransactions();
+  }, []);
 
-export default function TransactionsSection() {
-  const { stats, transactions, providers, expandedRow, toggleExpandedRow } =
-    useTransactionLogic();
+  if (loading) return <p className="text-center py-10">Loading transactions...</p>;
+  if (error) return <p className="text-center text-red-500 py-10">{error}</p>;
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {stats.map((stat) => (
-          <StatCard key={stat.title} title={stat.title} value={stat.value} />
-        ))}
-      </div>
+    <div className="space-y-8">
 
-      <Card className="p-4 rounded-2xl shadow-sm hover:shadow-md transition-shadow duration-200">
-        <h3 className="text-lg font-semibold mb-4">Recent Transactions Log</h3>
-        <ul className="divide-y divide-border">
-          {transactions.map((transaction) => (
-            <li
-              key={transaction.id}
-              className="py-3 px-2 rounded-lg transition-all duration-300 hover:bg-muted/50 cursor-pointer"
-              onClick={() => toggleExpandedRow(transaction.id)}
-            >
-              <div className="flex justify-between items-center">
-                <div>
-                  <span className="font-medium block">{transaction.title}</span>
-                  <p className="text-xs text-muted-foreground">{transaction.date}</p>
-                </div>
-                <span
-                  className={`font-semibold ${
-                    transaction.amount.includes("-") ? "text-destructive" : "text-accent"
-                  }`}
-                >
-                  {transaction.amount}
-                </span>
-              </div>
-
-              {expandedRow === transaction.id && (
-                <div className="mt-3 p-3 bg-card rounded-lg text-sm space-y-1 border">
-                  <p>
-                    <strong>Provider Name:</strong>{" "}
-                    {providers[0]?.businessName || "Sample Provider"}
-                  </p>
-                  <p>
-                    <strong>Email:</strong>{" "}
-                    {providers[0]?.businessEmail || "provider@example.com"}
-                  </p>
-                  <p>
-                    <strong>Phone:</strong>{" "}
-                    {providers[0]?.businessPhone || "+251 900 000000"}
-                  </p>
-                  <p>
-                    <strong>City:</strong> {providers[0]?.city || "Addis Ababa"}
-                  </p>
-                </div>
-              )}
-            </li>
-          ))}
-        </ul>
+      <Card className="rounded-2xl shadow">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>All Tips</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {tips.length === 0 ? (
+            <p className="text-muted-foreground">No tips found.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Tip ID</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Created At</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {tips.map((tip) => (
+                  <TableRow
+                    key={tip.id}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => setSelectedTip(tip)}
+                  >
+                    <TableCell>{tip.id}</TableCell>
+                    <TableCell className="text-secondary font-semibold">{tip.amount} ETB</TableCell>
+                    <TableCell>{tip.status}</TableCell>
+                    <TableCell>{tip.created_at ? new Date(tip.created_at).toLocaleString() : "-"}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
       </Card>
+
+      <Card className="rounded-2xl shadow">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>All Payments</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {payments.length === 0 ? (
+            <p className="text-muted-foreground">No payments found.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Payment ID</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Chapa Fee</TableHead>
+                  <TableHead>Service Fee</TableHead>
+                  <TableHead>Created At</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {payments.map((payment) => (
+                  <TableRow
+                    key={payment.id}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => setSelectedPayment(payment)}
+                  >
+                    <TableCell>{payment.id}</TableCell>
+                    <TableCell className="text-secondary font-semibold">{payment.amount} ETB</TableCell>
+                    <TableCell>{payment.chapa_fee} ETB</TableCell>
+                    <TableCell>{payment.service_fee} ETB</TableCell>
+                    <TableCell>{payment.created_at ? new Date(payment.created_at).toLocaleString() : "-"}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      <Dialog open={!!selectedTip} onOpenChange={() => setSelectedTip(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Tip Details</DialogTitle>
+          </DialogHeader>
+          {selectedTip && (
+            <div className="space-y-2 text-sm">
+              <p><strong>ID:</strong> {selectedTip.id}</p>
+              <p><strong>Employee ID:</strong> {selectedTip.employee_id}</p>
+              <p><strong>Service Provider ID:</strong> {selectedTip.service_provider_id}</p>
+              <p><strong>Amount:</strong> {selectedTip.amount} ETB</p>
+              <p><strong>Status:</strong> {selectedTip.status}</p>
+              <p><strong>Created At:</strong> {selectedTip.created_at ? new Date(selectedTip.created_at).toLocaleString() : "-"}</p>
+              <p><strong>Updated At:</strong> {selectedTip.updated_at ? new Date(selectedTip.updated_at).toLocaleString() : "-"}</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!selectedPayment} onOpenChange={() => setSelectedPayment(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Payment Details</DialogTitle>
+          </DialogHeader>
+          {selectedPayment && (
+            <div className="space-y-2 text-sm">
+              <p><strong>ID:</strong> {selectedPayment.id}</p>
+              <p><strong>Employee ID:</strong> {selectedPayment.employee_id}</p>
+              <p><strong>Tip ID:</strong> {selectedPayment.tip_id}</p>
+              <p><strong>Amount:</strong> {selectedPayment.amount} ETB</p>
+              <p><strong>Chapa Fee:</strong> {selectedPayment.chapa_fee} ETB</p>
+              <p><strong>Service Fee:</strong> {selectedPayment.service_fee} ETB</p>
+              <p><strong>Created At:</strong> {selectedPayment.created_at ? new Date(selectedPayment.created_at).toLocaleString() : "-"}</p>
+              <p><strong>Updated At:</strong> {selectedPayment.updated_at ? new Date(selectedPayment.updated_at).toLocaleString() : "-"}</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
