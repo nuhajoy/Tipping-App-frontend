@@ -160,8 +160,8 @@ const ProvidersTable = ({ providers, setSelectedProvider }) => {
                 >
                   <td className="px-4 py-4 whitespace-nowrap">
                     <div className="w-10 h-10 relative rounded-full overflow-hidden">
-                      <Image
-                        src={getSafeImageUrl(provider.image_url)}
+                      <img
+                        src={getSafeImageUrl(provider.image_url) || '/easy.png'}
                         alt={provider.name || "Provider"}
                         fill
                         sizes="40px"
