@@ -134,13 +134,64 @@ export default function Signup() {
     }
 
     const formData = new FormData();
+    const provider_data = {
+      name: signupData.businessName,
+      category_id: signupData.businessType,
+      email: signupData.businessEmail,
+      password: signupData.password,
+      contact_phone: signupData.businessPhone,
+      tax_id: signupData.taxId,
+      description: signupData.businessDescription,
+      address: {
+        street_address: signupData.businessAddress,
+        city: signupData.city,
+        region: signupData.region,
+      },
+      image_url: signupData.imageUrl,
+    };
+    formData.append("provider_data", JSON.stringify(provider_data));
+    if (signupData.license) formData.append("license", signupData.license);
 
-    toast.success("Registration successful! Redirecting to dashboard...");
-    resetSignupData();
-
-    window.location.href =
-      "/auth/verify";
-};
+    try {
+      const res = await axios.post(
+        `${apiUrl}/service-providers/register`,
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
+      toast.success(
+        res.data.message || "Registration successful! Check your email."
+      );
+      setSignupData({
+        businessName: "",
+        businessType: "",
+        businessEmail: "",
+        businessPhone: "",
+        businessAddress: "",
+        city: "",
+        region: "",
+        taxId: "",
+        businessDescription: "",
+        imageUrl: "",
+        license: null,
+        licenseName: "",
+        password: "",
+        confirmPassword: "",
+      });
+      router.push("/auth/verify");
+    } catch (err) {
+      console.error(err);
+      const fallback =
+        err.response?.data?.error || err.message || "Registration failed.";
+      const errors = err.response?.data?.errors;
+      if (errors) {
+        toast.error(Object.values(errors).flat().join(", "));
+      } else {
+        toast.error(fallback);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen">
@@ -376,7 +427,7 @@ export default function Signup() {
           </form>
         )}
 
-      
+        {/* Step 2 */}
         {step === 2 && (
           <form className="space-y-2" onSubmit={handleSubmit}>
             <div>

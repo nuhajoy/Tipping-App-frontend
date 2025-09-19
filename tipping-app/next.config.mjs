@@ -7,6 +7,9 @@ const nextConfig = {
       "res.cloudinary.com",
       "letsenhance.io",
       "lh3.googleusercontent.com",
+      "onedrive.live.com", 
+      "onedrive.live.com",
+      "1drv.ms", 
     ],
   },
 };
