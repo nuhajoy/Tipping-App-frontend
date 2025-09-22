@@ -1,152 +1,185 @@
 "use client";
 
-import { useAdminStore } from "@/store/adminStore";
+import { useState, useEffect } from "react";
+import Image from "next/image";
+import axios from "axios";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+
+const getSafeImageUrl = (url) => {
+  if (!url) return "/placeholder.png";
+  if (url.includes("google.com/imgres")) return "/placeholder.png";
+  return url;
+};
 
 const useProviderListState = () => {
-  const {
-    providers,
-    expandedRow,
-    editRow,
-    searchQuery,
-    loading,
-    error,
-    setSearchQuery,
-    setExpandedRow,
-    setEditRow,
-    handleApprove,
-    handleSuspend,
-    handleRemove,
-    loadProviders,
-    setLoading,
-    setError,
-  } = useAdminStore();
+  const [providers, setProviders] = useState([]);
+  const [selectedProvider, setSelectedProvider] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  if (!providers.length && !loading && !error) {
-    setLoading(true);
-    try {
-      loadProviders();
-    } catch (err) {
-      console.error("Failed to load providers data:", err);
-      setError("Couldn't retrieve provider list. Please check the network.");
-    } finally {
+  const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
+
+  useEffect(() => {
+    if (!token) {
+      setError("No auth token found. Please log in.");
       setLoading(false);
+      return;
     }
-  }
+
+    const fetchProviders = async () => {
+      setLoading(true);
+      try {
+        const res = await axios.get(`${API_BASE_URL}/admin/service-providers?per_page=50`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        let data = res.data;
+        if (typeof data === "string") {
+          const jsonStart = data.indexOf("{");
+          data = JSON.parse(data.substring(jsonStart));
+        }
+
+        const formatted = (data.data || []).map((p) => ({
+          ...p,
+          status: p.registration_status === "accepted" ? "Verified" : "Pending",
+        }));
+
+        setProviders(formatted);
+      } catch (err) {
+        console.error("Error fetching providers:", err.response || err);
+        setError("Failed to fetch providers.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProviders();
+  }, [token]);
+
+  const handleAction = async (provider, action) => {
+    if (!provider.id || !token) return;
+
+    let url = `${API_BASE_URL}/admin/service-providers/${provider.id}`;
+    if (action === "approve") url += "/accept";
+    if (action === "suspend") url += "/suspend";
+    if (action === "unsuspend") url += "/unsuspend";
+    if (action === "remove") url += "/reject";
+
+    const payload = action === "suspend" ? { reason: "Policy violation" } : {};
+
+    try {
+      const res = await axios.post(url, payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.data.provider) {
+        setProviders((prev) =>
+          prev.map((p) =>
+            p.id === provider.id
+              ? {
+                  ...p,
+                  ...res.data.provider,
+                  status:
+                    res.data.provider.registration_status === "accepted"
+                      ? "Verified"
+                      : p.status === "Pending" && action === "approve"
+                      ? "Verified"
+                      : p.status,
+                }
+              : p
+          )
+        );
+      }
+    } catch (err) {
+      console.error(`Failed to ${action} provider:`, err.response || err);
+    }
+  };
 
   const filteredProviders = !searchQuery
     ? providers
     : providers.filter((p) =>
-        (p.businessName || "").toLowerCase().includes(searchQuery.toLowerCase())
+        (p.name || "").toLowerCase().includes(searchQuery.toLowerCase())
       );
 
   return {
     filteredProviders,
     searchQuery,
     setSearchQuery,
-    expandedRow,
-    setExpandedRow,
-    editRow,
-    setEditRow,
+    selectedProvider,
+    setSelectedProvider,
     loading,
     error,
-    handleApprove,
-    handleSuspend,
-    handleRemove,
+    handleAction,
   };
 };
 
-const ProvidersTable = ({
-  providers,
-  expandedRow,
-  editRow,
-  setExpandedRow,
-  setEditRow,
-  handleApprove,
-  handleSuspend,
-  handleRemove,
-}) => {
+const ProvidersTable = ({ providers, setSelectedProvider }) => {
   const getStatusClass = (status) => {
-    if (status === "Approved" || status === "Verified") return "text-green-500 bg-green-100";
-    if (status === "Suspended") return "text-red-500 bg-red-100";
-    return "text-yellow-500 bg-yellow-100";
-  };
-
-  const handleEditClick = (e, providerId) => {
-    e.stopPropagation();
-    setEditRow(editRow === providerId ? null : providerId);
-    setExpandedRow(expandedRow === providerId ? null : providerId);
+    if (status === "Verified") return "text-[var(--accent-foreground)] bg-[var(--accent)]";
+    if (status === "Suspended") return "text-[var(--destructive)] bg-[var(--slight-accent)]";
+    return "text-[var(--foreground)] bg-[var(--muted)]";
   };
 
   return (
     <div className="overflow-x-auto mt-4">
-      <table className="min-w-full divide-y divide-border">
-        <thead className="bg-muted">
+      <table className="min-w-full divide-y border-[var(--border)]">
+        <thead className="bg-[var(--muted)]">
           <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Name</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Type</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Email</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Status</th>
-            <th className="relative px-6 py-3"><span className="sr-only">Actions</span></th>
+            {["Avatar", "Name", "Email", "Status"].map((title) => (
+              <th
+                key={title}
+                className="px-6 py-3 text-left text-xs font-medium text-[var(--muted-foreground)] uppercase tracking-wider"
+              >
+                {title}
+              </th>
+            ))}
           </tr>
         </thead>
-        <tbody className="bg-background divide-y divide-border">
+        <tbody className="bg-[var(--background)] divide-y border-[var(--border)]">
           {providers.length === 0 ? (
             <tr>
-              <td colSpan="5" className="px-6 py-4 whitespace-nowrap text-sm text-center text-muted-foreground">
-                No service providers found. Try a different search?
+              <td colSpan={4} className="px-6 py-4 text-center text-sm text-[var(--muted-foreground)]">
+                No service providers found.
               </td>
             </tr>
           ) : (
-            providers.flatMap((provider) => {
-              const providerKey = provider.id || provider.businessEmail;
+            providers.map((provider) => {
               const displayStatus = provider.status || "Pending";
 
-              const row = (
+              return (
                 <tr
-                  key={providerKey}
-                  className="hover:bg-accent/50 cursor-pointer transition-colors"
-                  onClick={() => setExpandedRow(expandedRow === providerKey ? null : providerKey)}
+                  key={provider.id}
+                  className="hover:bg-[var(--accent)]/20 cursor-pointer transition-colors"
+                  onClick={() => setSelectedProvider(provider)}
                 >
-                  <td className="px-6 py-4 whitespace-nowrap">{provider.businessName}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">{provider.businessType}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">{provider.businessEmail}</td>
+                  <td className="px-4 py-4 whitespace-nowrap">
+                    <div className="w-10 h-10 relative rounded-full overflow-hidden">
+                      <img
+                        src={getSafeImageUrl(provider.image_url) || '/easy.png'}
+                        alt={provider.name || "Provider"}
+                        fill
+                        sizes="40px"
+                        className="object-cover"
+                      />
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">{provider.name}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">{provider.email}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(displayStatus)}`}>
+                    <span
+                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(displayStatus)}`}
+                    >
                       {displayStatus === "Verified" ? "Approved" : displayStatus}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <Button size="sm" variant="outline" onClick={(e) => handleEditClick(e, providerKey)}>
-                      {editRow === providerKey ? "Close" : "Edit"}
-                    </Button>
-                  </td>
                 </tr>
               );
-
-              const details = (
-                <tr key={`${providerKey}-details`} className="bg-muted">
-                  <td colSpan="5" className="p-4 text-sm text-muted-foreground">
-                    <div className="grid grid-cols-2 gap-2">
-                      <p><strong>Description:</strong> {provider.businessDescription || "N/A"}</p>
-                      <p><strong>Address:</strong> {provider.businessAddress || "N/A"}</p>
-                      <p><strong>City:</strong> {provider.city || "N/A"}</p>
-                      <p><strong>Region:</strong> {provider.region || "N/A"}</p>
-                      <p><strong>Phone:</strong> {provider.businessPhone || "N/A"}</p>
-                      <p><strong>Tax ID:</strong> {provider.taxId || "N/A"}</p>
-                    </div>
-                    <div className="flex space-x-2 mt-4">
-                      <Button onClick={() => handleApprove(provider.id)}>Approve</Button>
-                      <Button variant="destructive" onClick={() => handleSuspend(provider.id)}>Suspend</Button>
-                      <Button variant="outline" className="text-red-500" onClick={() => handleRemove(provider.id)}>Remove</Button>
-                    </div>
-                  </td>
-                </tr>
-              );
-
-              return expandedRow === providerKey ? [row, details] : [row];
             })
           )}
         </tbody>
@@ -160,20 +193,15 @@ export default function ProvidersSection() {
     filteredProviders,
     searchQuery,
     setSearchQuery,
-    expandedRow,
-    setExpandedRow,
-    editRow,
-    setEditRow,
+    selectedProvider,
+    setSelectedProvider,
     loading,
     error,
-    handleApprove,
-    handleSuspend,
-    handleRemove,
+    handleAction,
   } = useProviderListState();
 
-
-  const approvedCount = filteredProviders.filter(p => p.status === "Approved" || p.status === "Verified").length;
-  const suspendedCount = filteredProviders.filter(p => p.status === "Suspended").length;
+  const approvedCount = filteredProviders.filter((p) => p.status === "Verified").length;
+  const suspendedCount = filteredProviders.filter((p) => p.is_suspended).length;
   const pendingCount = filteredProviders.length - approvedCount - suspendedCount;
 
   const summaryStats = [
@@ -184,11 +212,11 @@ export default function ProvidersSection() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 bg-background min-h-screen p-6">
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         {summaryStats.map((stat, index) => (
           <Card key={index} className="p-4 rounded-2xl shadow hover:shadow-md transition-shadow">
-            <h4 className="text-sm font-medium text-muted-foreground">{stat.title}</h4>
+            <h4 className="text-sm font-medium text-[var(--muted-foreground)]">{stat.title}</h4>
             <p className="text-2xl font-bold">{stat.value}</p>
           </Card>
         ))}
@@ -206,22 +234,78 @@ export default function ProvidersSection() {
         </div>
 
         {loading ? (
-          <p className="text-muted-foreground">Loading providers...</p>
+          <p className="text-[var(--muted-foreground)]">Loading providers...</p>
         ) : error ? (
-          <p className="text-destructive">{error}</p>
+          <p className="text-[var(--destructive)]">{error}</p>
         ) : (
           <ProvidersTable
             providers={filteredProviders}
-            expandedRow={expandedRow}
-            editRow={editRow}
-            setExpandedRow={setExpandedRow}
-            setEditRow={setEditRow}
-            handleApprove={handleApprove}
-            handleSuspend={handleSuspend}
-            handleRemove={handleRemove}
+            setSelectedProvider={setSelectedProvider}
           />
         )}
       </Card>
+
+      <Dialog open={!!selectedProvider} onOpenChange={() => setSelectedProvider(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Provider Details</DialogTitle>
+          </DialogHeader>
+          {selectedProvider && (
+            <div className="space-y-2 text-sm">
+              <p><strong>Name:</strong> {selectedProvider.name}</p>
+              <p><strong>Email:</strong> {selectedProvider.email}</p>
+              <p><strong>Category:</strong> {selectedProvider.category_id}</p>
+              <p><strong>Description:</strong> {selectedProvider.description || "N/A"}</p>
+              <p><strong>Phone:</strong> {selectedProvider.contact_phone || "N/A"}</p>
+              <p><strong>Tax ID:</strong> {selectedProvider.tax_id || "N/A"}</p>
+              {selectedProvider.license && (
+                <p>
+                  <strong>License:</strong>{" "}
+                  <a
+                    href={selectedProvider.license}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[var(--accent-foreground)] underline"
+                  >
+                    View
+                  </a>
+                </p>
+              )}
+              <div className="flex space-x-2 mt-4">
+                <Button
+                  onClick={() => handleAction(selectedProvider, "approve")}
+                  className="bg-[var(--accent)] text-[var(--accent-foreground)] hover:brightness-110 transition-colors"
+                >
+                  Approve
+                </Button>
+
+                {!selectedProvider.is_suspended ? (
+                  <Button
+                    onClick={() => handleAction(selectedProvider, "suspend")}
+                    className="bg-[var(--slight-accent)] text-[var(--foreground)] hover:brightness-110 transition-colors"
+                  >
+                    Suspend
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={() => handleAction(selectedProvider, "unsuspend")}
+                    className="bg-[var(--muted)] text-[var(--foreground)] hover:brightness-110 transition-colors"
+                  >
+                    Unsuspend
+                  </Button>
+                )}
+
+                <Button
+                  onClick={() => handleAction(selectedProvider, "remove")}
+                  className="bg-[var(--error)] text-[var(--accent-foreground)] hover:brightness-110 transition-colors"
+                >
+                  Remove
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

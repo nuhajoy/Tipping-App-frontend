@@ -38,7 +38,6 @@ export default function LandingPage() {
         "No delays or manual handling",
       ],
       icon: "/payment.png",
-      background: "/fast_payment.avif",
     },
     {
       title: "Easy to Use",
@@ -48,7 +47,6 @@ export default function LandingPage() {
         "Works across all devices",
       ],
       icon: "/easy.png",
-      background: "/easy.png",
     },
     {
       title: "Boost Motivation",
@@ -58,18 +56,17 @@ export default function LandingPage() {
         "Better customer satisfaction",
       ],
       icon: "/boost.png",
-      background: "/motivation.png",
     },
   ];
 
   return (
-    <main className="font-serif min-h-screen flex flex-col bg-white text-[#1A1A1A] pt-[80px]">
+    <main className="font-serif min-h-screen flex flex-col bg-white text-[#1A1A1A] pt-[80px] ">
       <Header />
 
       {/* Hero Section */}
       <section className="flex flex-col md:flex-row items-center justify-between px-6 md:px-20 py-20">
         <div className="md:w-1/2 text-left">
-          <h1 className="text-4xl font-bold mb-4">
+          <h1 className=" text-4xl font-bold mb-4">
             Revolutionized Tipping for Businesses
           </h1>
           <p className="text-lg text-[#666] mb-6">
@@ -116,6 +113,7 @@ export default function LandingPage() {
               key={index}
               className="bg-white rounded-xl shadow-md p-8 flex flex-col items-center border border-gray-200 hover:shadow-lg transition-shadow duration-300 min-h-[360px]"
             >
+              {/* Larger icon in circular container */}
               <div className="w-24 h-24 mb-4 flex items-center justify-center rounded-full bg-[#E6F9E6]">
                 <Image
                   src={step.image}
@@ -141,38 +139,36 @@ export default function LandingPage() {
       </section>
 
       {/* Why Choose TipTop Section */}
-      <section className="w-full bg-[#F9FDF9] py-24 px-6 md:px-20">
-        <h2 className="text-3xl md:text-4xl font-extrabold text-center text-[#1A1A1A] mb-16">
+      {/* Why Choose TipTop Section */}
+      <section className="py-20 bg-[#F9F9F9] px-6 md:px-20">
+        <h2 className="text-3xl font-semibold text-center mb-10 text-[#1A1A1A]">
           Why Choose TipTop?
         </h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-          {whyChooseFeatures.map((feature, index) => (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+          {whyChooseFeatures.map((item, index) => (
             <div
               key={index}
-              className="flex flex-col items-center text-center space-y-6"
+              className="bg-white rounded-xl shadow-md p-8 flex flex-col items-center border border-gray-200 hover:shadow-lg transition-shadow duration-300 min-h-[360px]"
             >
-              {/* Icon or Image */}
-              <div className="w-28 h-28 relative">
+              {/* Icon in circular container */}
+              <div className="w-24 h-24 mb-4 flex items-center justify-center rounded-full bg-[#E6F9E6]">
                 <Image
-                  src={feature.icon}
-                  alt={`${feature.title} icon`}
-                  fill
+                  src={item.icon}
+                  alt={item.title}
+                  width={64}
+                  height={64}
                   className="object-contain"
                 />
               </div>
 
-              {/* Title */}
-              <h3 className="text-2xl font-bold text-black">
-                {feature.title}
+              <h3 className="text-lg font-semibold text-[#1A1A1A] mb-4">
+                {item.title}
               </h3>
 
-              {/* Description Points */}
-              <div className="space-y-3 text-[#333] text-base leading-relaxed">
-                {feature.points.map((point, i) => (
-                  <p key={i} className="hover:text-[#00b74f] transition-colors">
-                    {point}
-                  </p>
+              {/* Replace bullet points with paragraph-style highlights */}
+              <div className="space-y-3 text-sm text-[#666] px-2">
+                {item.points.map((point, i) => (
+                  <p key={i}>{point}</p>
                 ))}
               </div>
             </div>

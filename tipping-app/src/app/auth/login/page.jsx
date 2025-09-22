@@ -6,11 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Toaster, toast } from "sonner";
-import { useAuth } from "@/app/contexts/AuthContext";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
+import axios from "axios";
 
 export default function Login() {
-  const { login } = useAuth();
+  const router = useRouter();
+
   const [credentials, setCredentials] = useState({
     email: "",
     password: "",
@@ -20,6 +22,35 @@ export default function Login() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setCredentials((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const tryLogin = async (endpoint) => {
+    try {
+      const res = await axios.post(
+        `http://127.0.0.1:8000/api/${endpoint}/login`,
+        credentials,
+        { responseType: "text" }
+      );
+
+      const raw = res.data;
+      const cleaned = raw.substring(raw.indexOf("{"));
+      const parsed = JSON.parse(cleaned);
+
+      return { ...parsed, role: endpoint };
+    } catch (error) {
+      // Handle different error responses
+      if (error.response?.data) {
+        const raw = error.response.data;
+        try {
+          const cleaned = raw.substring(raw.indexOf("{"));
+          const parsed = JSON.parse(cleaned);
+          error.response.data = parsed;
+        } catch (e) {
+          // Keep original error data if parsing fails
+        }
+      }
+      throw error;
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -32,25 +63,75 @@ export default function Login() {
     }
 
     setLoading(true);
-    try {
-      const user = await login({ email, password });
-      toast.success("Login successful!");
 
-      switch (user.role) {
-        case "employee":
-          window.location.href = "/dashboard/employee";
-          break;
-        case "admin":
-          window.location.href = "/dashboard/admin";
-          break;
-        default:
-          window.location.href = "/dashboard/provider";
+    const roles = ["admin", "employee", "service-providers"];
+    let result = null;
+    let lastError = null;
+
+    for (const role of roles) {
+      try {
+        result = await tryLogin(role);
+        break; // Stop at first successful login
+      } catch (err) {
+        lastError = err;
+        // Continue to next role
       }
-    } catch (error) {
-      toast.error(error?.message || error?.error || "Login failed!");
-    } finally {
-      setLoading(false);
     }
+
+    if (!result) {
+      // Show specific error message if available
+      let errorMessage = "Invalid credentials. Please try again.";
+
+      if (lastError?.response?.data) {
+        const data = lastError.response.data;
+        if (data.status === "email_unverified") {
+          errorMessage = "Please verify your email before logging in.";
+        } else if (data.status === "license_pending") {
+          errorMessage =
+            "Your license is under review. Please wait for approval.";
+        } else if (data.status === "license_rejected") {
+          errorMessage = "Your license was rejected. Please contact support.";
+        } else if (data.error) {
+          errorMessage = data.error;
+        }
+      }
+
+      toast.error(errorMessage);
+      setLoading(false);
+      return;
+    }
+
+    const { token, role, user } = result;
+
+    if (!token || !role) {
+      toast.error("Invalid login response. Please contact support.");
+      setLoading(false);
+      return;
+    }
+
+    localStorage.setItem("auth_token", token);
+    localStorage.setItem("user_role", role);
+    localStorage.setItem("user_info", JSON.stringify(user));
+
+    toast.success(
+      `🎉 Login successful! Welcome back, ${
+        user?.name || user?.first_name || "user"
+      } — your dashboard is ready.`
+    );
+
+    setTimeout(() => {
+      if (role === "admin") {
+        router.push("/dashboard/admin");
+      } else if (role === "service-providers") {
+        router.push("/dashboard/provider");
+      } else if (role === "employee") {
+        router.push("/dashboard/employee");
+      } else {
+        router.push("/unauthorized");
+      }
+    }, 1500); // 1.5 seconds delay
+
+    setLoading(false);
   };
 
   return (
@@ -129,11 +210,21 @@ export default function Login() {
             <p className="text-sm md:text-lg mb-4 max-w-md">
               Join now and start receiving instant digital tips with ease.
             </p>
-            <Link href="/auth/signup">
-              <Button className="bg-[#71FF71] text-black hover:bg-[#00b74f] w-44 rounded-full py-2">
-                Sign Up
-              </Button>
-            </Link>
+            <div className="space-y-2">
+              <Link href="/auth/signup">
+                <Button className="bg-[#71FF71] text-black hover:bg-[#00b74f] w-44 rounded-full py-2">
+                  Business Sign Up
+                </Button>
+              </Link>
+              <Link href="/auth/employee-signup">
+                <Button
+                  variant="outline"
+                  className="w-44 rounded-full py-2 border-[#71FF71] text-[#00b74f] hover:bg-[#71FF71] hover:text-black"
+                >
+                  Employee Sign Up
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </main>

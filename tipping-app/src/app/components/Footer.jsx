@@ -29,7 +29,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="/Tip"
+                  href="/send-tip"
                   className="hover:text-[#71FF71] transition-colors"
                 >
                   Send a tip
