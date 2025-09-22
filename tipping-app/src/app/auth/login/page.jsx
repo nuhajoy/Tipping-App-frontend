@@ -49,9 +49,11 @@ export default function Login() {
 
       setTimeout(() => {
         if (role === "admin") router.push("/dashboard/admin");
-        else if (role === "service-providers")
-          router.push("/dashboard/provider");
-        else router.push("/dashboard/employee");
+        else if (role === "employee") {
+          router.push("/dashboard/employee");
+        }
+
+        else router.push("/dashboard/provider");
       }, 1000);
     } catch (error) {
       let msg = "Invalid credentials. Please try again.";
