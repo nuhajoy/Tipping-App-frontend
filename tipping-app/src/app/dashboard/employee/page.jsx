@@ -84,7 +84,9 @@ export default function EmployeeDashboard() {
     .filter((t) => {
       const d = new Date(t.created_at);
       const now = new Date();
-      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      return (
+        d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+      );
     })
     .reduce((sum, t) => sum + parseFloat(t.amount), 0);
 
@@ -224,23 +226,36 @@ export default function EmployeeDashboard() {
                 <CardTitle>Profile Info</CardTitle>
               </CardHeader>
               <CardContent>
-                <p><strong>First Name:</strong> {profile.first_name}</p>
-                <p><strong>Last Name:</strong> {profile.last_name}</p>
-                <p><strong>Email:</strong> {profile.email}</p>
-                <p><strong>Tip Code:</strong> {profile.tip_code}</p>
-                <p><strong>Status:</strong>
-                  <Badge variant={profile.is_active ? "default" : "secondary"} className="ml-2">
+                <p>
+                  <strong>First Name:</strong> {profile.first_name}
+                </p>
+                <p>
+                  <strong>Last Name:</strong> {profile.last_name}
+                </p>
+                <p>
+                  <strong>Email:</strong> {profile.email}
+                </p>
+                <p>
+                  <strong>Tip Code:</strong> {profile.tip_code}
+                </p>
+                <p>
+                  <strong>Status:</strong>
+                  <Badge
+                    variant={profile.is_active ? "default" : "secondary"}
+                    className="ml-2"
+                  >
                     {profile.is_active ? "Active" : "Inactive"}
                   </Badge>
-                  <Badge variant={profile.is_verified ? "default" : "destructive"} className="ml-2">
+                  <Badge
+                    variant={profile.is_verified ? "default" : "destructive"}
+                    className="ml-2"
+                  >
                     {profile.is_verified ? "Verified" : "Unverified"}
                   </Badge>
                 </p>
               </CardContent>
             </Card>
           </TabsContent>
-
-        
 
           {/* Bank */}
           <TabsContent value="bank" className="space-y-4 mt-4">
