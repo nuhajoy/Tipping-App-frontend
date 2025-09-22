@@ -5,12 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert } from "@/components/ui/alert";
+import { apiService } from "@/api";
+import { Loader2 } from "lucide-react";
 
 export default function CustomerTipPage() {
   const [employeeCode, setEmployeeCode] = useState("");
   const [amount, setAmount] = useState("");
   const [message, setMessage] = useState("");
-  const [isProcessing, setIsProcessing] = useState(false); 
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const showMessage = (text) => {
     setMessage(text);
@@ -18,36 +20,41 @@ export default function CustomerTipPage() {
   };
 
   const handleSendTip = async () => {
-    if (
-      !employeeCode.trim() ||
-      !amount.trim() ||
-      isNaN(amount) ||
-      Number(amount) <= 0
-    ) {
+    const cleanCode = employeeCode.trim();
+    const tipAmount = Number(amount);
+
+    if (!cleanCode || !tipAmount || isNaN(tipAmount) || tipAmount <= 0) {
       showMessage("Please enter a valid code and amount.");
       return;
     }
 
     try {
       setIsProcessing(true);
-      const res = await fetch("/api/send-tip", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: employeeCode, amount: Number(amount) }),
-      });
 
-      const data = await res.json();
-      if (res.ok) {
-        window.location.href = data.checkout_url;
+      const data = await apiService.processTip(cleanCode, tipAmount);
+
+      const checkoutUrl =
+        data?.link || data?.checkout_url || data?.data?.checkout_url;
+
+      if (checkoutUrl) {
+        window.location.href = checkoutUrl;
       } else {
+        console.log("Backend response:", data);
         showMessage(data.message || "Payment failed. Try again.");
       }
+
+
     } catch (err) {
       console.error(err);
-      showMessage("Something went wrong. Please try again.");
+      showMessage(
+        err?.data?.message ||
+          err.message ||
+          "Something went wrong. Please try again."
+      );
     } finally {
       setIsProcessing(false);
     }
+
   };
 
   return (
@@ -104,7 +111,14 @@ export default function CustomerTipPage() {
                   : "bg-accent text-accent-foreground hover:bg-green-500"
               }`}
           >
-            {isProcessing ? "Processing..." : "Send Tip"}
+            {isProcessing ? (
+              <>
+                <Loader2 className="inline-block h-4 w-4 animate-spin mr-2" />
+                Redirecting...
+              </>
+            ) : (
+              "Send Tip"
+            )}
           </Button>
         </div>
 

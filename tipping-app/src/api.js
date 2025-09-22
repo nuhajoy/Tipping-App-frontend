@@ -267,6 +267,28 @@ class ApiService {
       body: JSON.stringify(employeeData),
     });
   }
+  // ----------------------------
+  // Employee Bank Info
+  // ----------------------------
+  completeBankInfo(bankData) {
+    return this.request("/employees/set-bank-info", {
+      method: "POST",
+      body: JSON.stringify(bankData),
+    });
+  }
+  getBankAccount() {
+    return this.request("/employee/bank-account", {
+      method: "GET",
+    });
+  }
+ 
+
+  // alias for backward-compatibility
+  updateBankAccount(bankData) {
+    return this.completeBankInfo(bankData);
+  }
+
+ 
 
   // ----------------------------
   // Admin Auth & Management

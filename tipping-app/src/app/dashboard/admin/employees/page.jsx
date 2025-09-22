@@ -7,8 +7,6 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL;
-
 const useEmployeeListState = () => {
   const [employees, setEmployees] = useState([]);
   const [expandedRow, setExpandedRow] = useState(null);
@@ -16,8 +14,18 @@ const useEmployeeListState = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [token, setToken] = useState(null);
 
-  const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
+  useEffect(() => {
+    function syncToken() {
+      setToken(localStorage.getItem("auth_token"));
+    }
+    if (typeof window !== "undefined") {
+      syncToken();
+      window.addEventListener("storage", syncToken);
+      return () => window.removeEventListener("storage", syncToken);
+    }
+  }, []);
 
   useEffect(() => {
     if (!token) {
@@ -29,12 +37,15 @@ const useEmployeeListState = () => {
     const fetchEmployees = async () => {
       setLoading(true);
       try {
-        const res = await axios.get(`${API_BASE}/admin/employees?per_page=50`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: "application/json",
-          },
-        });
+        const res = await axios.get(
+          "http://127.0.0.1:8000/api/admin/employees?per_page=50",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: "application/json",
+            },
+          }
+        );
 
         let data = res.data;
         if (typeof data === "string") {
@@ -43,8 +54,8 @@ const useEmployeeListState = () => {
         }
 
         setEmployees(data.data || []);
+        setError(null);
       } catch (err) {
-        console.error("Error fetching employees:", err.response || err);
         setError("Failed to fetch employees.");
       } finally {
         setLoading(false);
@@ -57,7 +68,7 @@ const useEmployeeListState = () => {
   const handleActivate = async (id) => {
     try {
       const res = await axios.post(
-        `${API_BASE}/admin/employees/${id}/activate`,
+        `http://127.0.0.1:8000/api/admin/employees/${id}/activate`,
         {},
         {
           headers: {
@@ -71,15 +82,13 @@ const useEmployeeListState = () => {
           e.id === id ? { ...e, is_active: true, ...res.data.employee } : e
         )
       );
-    } catch (err) {
-      console.error("Failed to activate employee:", err.response || err);
-    }
+    } catch (err) {}
   };
 
   const handleDeactivate = async (id) => {
     try {
       const res = await axios.post(
-        `${API_BASE}/admin/employees/${id}/deactivate`,
+        `http://127.0.0.1:8000/api/admin/employees/${id}/deactivate`,
         {},
         {
           headers: {
@@ -93,15 +102,13 @@ const useEmployeeListState = () => {
           e.id === id ? { ...e, is_active: false, ...res.data.employee } : e
         )
       );
-    } catch (err) {
-      console.error("Failed to deactivate employee:", err.response || err);
-    }
+    } catch (err) {}
   };
 
   const handleSuspend = async (id) => {
     try {
       const res = await axios.post(
-        `${API_BASE}/admin/employees/${id}/suspend`,
+        `http://127.0.0.1:8000/api/admin/employees/${id}/suspend`,
         { reason: "Policy violation" },
         {
           headers: {
@@ -115,15 +122,13 @@ const useEmployeeListState = () => {
           e.id === id ? { ...e, is_suspended: true, ...res.data.employee } : e
         )
       );
-    } catch (err) {
-      console.error("Failed to suspend employee:", err.response || err);
-    }
+    } catch (err) {}
   };
 
   const handleUnsuspend = async (id) => {
     try {
       const res = await axios.post(
-        `${API_BASE}/admin/employees/${id}/unsuspend`,
+        `http://127.0.0.1:8000/api/admin/employees/${id}/unsuspend`,
         {},
         {
           headers: {
@@ -137,9 +142,7 @@ const useEmployeeListState = () => {
           e.id === id ? { ...e, is_suspended: false, ...res.data.employee } : e
         )
       );
-    } catch (err) {
-      console.error("Failed to unsuspend employee:", err.response || err);
-    }
+    } catch (err) {}
   };
 
   const filteredEmployees = !searchQuery
@@ -162,6 +165,8 @@ const useEmployeeListState = () => {
     handleDeactivate,
     handleSuspend,
     handleUnsuspend,
+    token,
+    setToken,
   };
 };
 
@@ -187,16 +192,21 @@ const EmployeesTable = ({
       <table className="min-w-full divide-y border-[var(--border)]">
         <thead className="bg-[var(--muted)]">
           <tr>
-            {["Unique ID", "Provider ID", "Active", "Verified", "Suspended", "Actions"].map(
-              (title) => (
-                <th
-                  key={title}
-                  className="px-6 py-3 text-left text-xs font-medium text-[var(--muted-foreground)] uppercase tracking-wider"
-                >
-                  {title}
-                </th>
-              )
-            )}
+            {[
+              "Unique ID",
+              "Provider ID",
+              "Active",
+              "Verified",
+              "Suspended",
+              "Actions",
+            ].map((title) => (
+              <th
+                key={title}
+                className="px-6 py-3 text-left text-xs font-medium text-[var(--muted-foreground)] uppercase tracking-wider"
+              >
+                {title}
+              </th>
+            ))}
           </tr>
         </thead>
         <tbody className="bg-[var(--background)] divide-y border-[var(--border)]">
@@ -221,8 +231,12 @@ const EmployeesTable = ({
                     )
                   }
                 >
-                  <td className="px-6 py-4 whitespace-nowrap">{employee.unique_id}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">{employee.service_provider_id}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {employee.unique_id}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {employee.service_provider_id}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {employee.is_active ? "Yes" : "No"}
                   </td>
@@ -245,8 +259,14 @@ const EmployeesTable = ({
               );
 
               const details = (
-                <tr key={`${employee.id}-details`} className="bg-[var(--muted)]">
-                  <td colSpan="6" className="p-4 text-sm text-[var(--muted-foreground)]">
+                <tr
+                  key={`${employee.id}-details`}
+                  className="bg-[var(--muted)]"
+                >
+                  <td
+                    colSpan="6"
+                    className="p-4 text-sm text-[var(--muted-foreground)]"
+                  >
                     <div className="flex space-x-2 mt-4">
                       {employee.is_active ? (
                         <Button
@@ -308,6 +328,8 @@ export default function EmployeesSection() {
     handleDeactivate,
     handleSuspend,
     handleUnsuspend,
+    token,
+    setToken,
   } = useEmployeeListState();
 
   const activeCount = filteredEmployees.filter((e) => e.is_active).length;
@@ -321,8 +343,14 @@ export default function EmployeesSection() {
     { title: "Suspended", value: suspendedCount },
   ];
 
+  const handleRetry = () => {
+    if (typeof window !== "undefined") {
+      setToken(localStorage.getItem("auth_token"));
+    }
+  };
+
   return (
-    <div className="space-y-6 bg-background min-h-screen p-4">
+    <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         {summaryStats.map((stat, index) => (
           <Card
@@ -351,7 +379,12 @@ export default function EmployeesSection() {
         {loading ? (
           <p className="text-[var(--muted-foreground)]">Loading employees...</p>
         ) : error ? (
-          <p className="text-[var(--destructive)]">{error}</p>
+          <div>
+            <p className="text-[var(--destructive)]">{error}</p>
+            <Button onClick={handleRetry} className="mt-2">
+              Retry
+            </Button>
+          </div>
         ) : (
           <EmployeesTable
             employees={filteredEmployees}

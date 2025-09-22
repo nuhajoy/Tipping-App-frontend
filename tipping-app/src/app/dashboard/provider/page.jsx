@@ -18,7 +18,6 @@ import {
   UserCheck,
   UserX,
   UserPlus,
-  ArrowUpRight,
 } from "lucide-react";
 
 import {
@@ -34,15 +33,8 @@ import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 
-import {
-  fetchEmployees,
-  registerEmployeesAPI,
-  toggleEmployeeStatusAPI,
-  fetchProfile,
-  fetchEmployeeSummary,
-  logoutAPI,
-} from "@/api";
 import { PieChart, Pie, Cell, Legend, ResponsiveContainer } from "recharts";
+import { apiService } from "@/api"; 
 
 export default function Dashboard() {
   const router = useRouter();
@@ -62,7 +54,6 @@ export default function Dashboard() {
   const [profile, setProfile] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
 
-const token = localStorage.getItem("token");
   const showMessage = (text, type = "success") => {
     setMessage({ text, type });
     setTimeout(() => setMessage(null), 3000);
@@ -75,34 +66,31 @@ const token = localStorage.getItem("token");
     return () => window.removeEventListener("resize", checkIfMobile);
   }, []);
 
-const loadData = useCallback(async () => {
-  setLoading(true);
-  try {
-    const profileData = await fetchProfile(token);
-    setProfile(profileData);
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const profileData = await apiService.fetchProfile();
+      setProfile(profileData);
 
-    const summaryData = await fetchEmployeeSummary(token);
-    setEmployeeSummary({
-      total: summaryData.total,
-      active: summaryData.active,
-      inactive: summaryData.inactive,
-    });
+      const summaryData = await apiService.fetchEmployeeSummary();
+      setEmployeeSummary({
+        total: summaryData.total,
+        active: summaryData.active,
+        inactive: summaryData.inactive,
+      });
 
-    const employeeList = await fetchEmployees(token);
-    const employees = (employeeList.employees || employeeList).map(emp => ({
-      ...emp,
-      is_active: emp.is_active ?? true, 
-    }));
-
-    setEmployees(employees);
-  } catch (error) {
-    console.error("Error loading dashboard data:", error);
-    showMessage("Failed to load dashboard data.", "error");
-  } finally {
-    setLoading(false);
-  }
-}, [token]);
-
+      const employeeList = await apiService.fetchEmployees();
+      const mappedEmployees = (employeeList.employees || employeeList).map(
+        (emp) => ({ ...emp, is_active: emp.is_active ?? true })
+      );
+      setEmployees(mappedEmployees);
+    } catch (error) {
+      console.error("Error loading dashboard data:", error);
+      showMessage("Failed to load dashboard data.", "error");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     loadData();
@@ -116,10 +104,9 @@ const loadData = useCallback(async () => {
 
     setLoading(true);
     try {
-      const response = await registerEmployeesAPI(
-        { count: newEmployeeCount },
-        token
-      );
+      const response = await apiService.registerEmployeesAPI({
+        count: newEmployeeCount,
+      });
 
       const createdEmployees = (response.employees || []).map((emp) => ({
         id: emp.employee_code,
@@ -139,12 +126,7 @@ const loadData = useCallback(async () => {
 
       setNewEmployeeCount(1);
       setShowForm(false);
-
-  
-      showMessage(
-        `Employee code(s) generated successfully.`,
-        "success"
-      );
+      showMessage(`Employee code(s) generated successfully.`, "success");
     } catch (err) {
       console.error(err);
       showMessage("Error adding employee: " + err.message, "error");
@@ -162,14 +144,11 @@ const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const emp = employees.find((e) => e.id === employeeId);
-      if (!emp) {
-        throw new Error("Employee not found.");
-      }
+      if (!emp) throw new Error("Employee not found.");
 
-      await toggleEmployeeStatusAPI(
+      await apiService.toggleEmployeeStatusAPI(
         employeeId,
-        emp.is_active ? "deactivate" : "activate",
-        token
+        emp.is_active ? "deactivate" : "activate"
       );
 
       setEmployees((prev) =>
@@ -195,8 +174,7 @@ const loadData = useCallback(async () => {
 
   const handleLogout = async () => {
     try {
-      await logoutAPI(token);
-      localStorage.removeItem("token");
+      await apiService.logoutAPI();
       router.push("/auth/login");
     } catch (error) {
       console.error("Logout failed:", error);
@@ -223,17 +201,18 @@ const loadData = useCallback(async () => {
         : null,
   }));
 
-  const filteredEmployees = employeeList.filter((emp) =>
-    (emp.name || "Pending")
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase()) ||
-    emp.id.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredEmployees = employeeList.filter(
+    (emp) =>
+      (emp.name || "Pending")
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      emp.id.toLowerCase().includes(searchTerm.toLowerCase())
   );
-  
-  // New section for recent employees
+
   const recentEmployees = employeeList
-    .slice(0, 5)
-    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    .slice()
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    .slice(0, 5);
 
   if (loading && !employees.length) {
     return (
@@ -261,6 +240,9 @@ const loadData = useCallback(async () => {
       </div>
     );
   }
+
+  // --- THE REST OF YOUR UI stays exactly the same ---
+  // Keep all your header, sidebar, tabs, charts, employee table, recent employees, add form, etc.
 
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
@@ -336,9 +318,13 @@ const loadData = useCallback(async () => {
           <div className="flex items-center space-x-4">
             <div className="hidden sm:flex items-center space-x-2">
               <Avatar className="h-10 w-10">
-                <AvatarImage src={profile?.image_url || "/avatars/default.jpg"} />
+                <AvatarImage
+                  src={profile?.image_url || "/avatars/default.jpg"}
+                />
                 <AvatarFallback>
-                  {profile?.name ? profile.name.slice(0, 2).toUpperCase() : "SP"}
+                  {profile?.name
+                    ? profile.name.slice(0, 2).toUpperCase()
+                    : "SP"}
                 </AvatarFallback>
               </Avatar>
               <div>
@@ -418,17 +404,21 @@ const loadData = useCallback(async () => {
                       color: "text-red-500",
                       icon: UserX,
                     },
-                 {
-  title: "Pending",
-  value: employees.filter(e => !e.first_name && !e.last_name && !e.email).length,
-  color: "text-yellow-500",
-  icon: UserPlus,
-},
-
+                    {
+                      title: "Pending",
+                      value: employees.filter(
+                        (e) => !e.first_name && !e.last_name && !e.email
+                      ).length,
+                      color: "text-yellow-500",
+                      icon: UserPlus,
+                    },
                   ].map(({ title, value, color, icon: Icon }, idx) => (
                     <motion.div
                       key={idx}
-                      whileHover={{ scale: 1.02, boxShadow: "0 8px 16px rgba(0, 0, 0, 0.1)" }}
+                      whileHover={{
+                        scale: 1.02,
+                        boxShadow: "0 8px 16px rgba(0, 0, 0, 0.1)",
+                      }}
                       transition={{ type: "spring", stiffness: 300 }}
                     >
                       <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
@@ -439,9 +429,7 @@ const loadData = useCallback(async () => {
                           <Icon className={`h-4 w-4 ${color}`} />
                         </CardHeader>
                         <CardContent>
-                          <div className="text-2xl font-bold">
-                            {value}
-                          </div>
+                          <div className="text-2xl font-bold">{value}</div>
                         </CardContent>
                       </Card>
                     </motion.div>
@@ -494,15 +482,27 @@ const loadData = useCallback(async () => {
                       <ul className="space-y-4">
                         {recentEmployees.length > 0 ? (
                           recentEmployees.map((emp) => (
-                            <li key={emp.id} className="flex items-center space-x-3">
+                            <li
+                              key={emp.id}
+                              className="flex items-center space-x-3"
+                            >
                               <Avatar className="h-8 w-8">
-                                <AvatarImage src={emp.image_url || "/avatars/default.jpg"} />
+                                <AvatarImage
+                                  src={emp.image_url || "/avatars/default.jpg"}
+                                />
                                 <AvatarFallback>
-                                  {emp.name ? emp.name.split(" ").map(n => n[0]).join("") : "UN"}
+                                  {emp.name
+                                    ? emp.name
+                                        .split(" ")
+                                        .map((n) => n[0])
+                                        .join("")
+                                    : "UN"}
                                 </AvatarFallback>
                               </Avatar>
                               <div>
-                                <p className="font-medium">{emp.name || "Pending Employee"}</p>
+                                <p className="font-medium">
+                                  {emp.name || "Pending Employee"}
+                                </p>
                                 <p className="text-xs text-gray-500 dark:text-gray-400">
                                   Code: {emp.id}
                                 </p>
@@ -613,23 +613,40 @@ const loadData = useCallback(async () => {
                               {emp.name ? (
                                 <div className="flex items-center space-x-2">
                                   <Avatar className="h-8 w-8">
-                                    <AvatarImage src={emp.image_url || "/avatars/default.jpg"} />
+                                    <AvatarImage
+                                      src={
+                                        emp.image_url || "/avatars/default.jpg"
+                                      }
+                                    />
                                     <AvatarFallback>
-                                      {emp.name.split(" ").map(n => n[0]).join("")}
+                                      {emp.name
+                                        .split(" ")
+                                        .map((n) => n[0])
+                                        .join("")}
                                     </AvatarFallback>
                                   </Avatar>
                                   <div>
-                                    <p className="font-medium text-gray-900 dark:text-white">{emp.name}</p>
-                                    {emp.email && <p className="text-xs text-gray-500 dark:text-gray-400">{emp.email}</p>}
+                                    <p className="font-medium text-gray-900 dark:text-white">
+                                      {emp.name}
+                                    </p>
+                                    {emp.email && (
+                                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                                        {emp.email}
+                                      </p>
+                                    )}
                                   </div>
                                 </div>
                               ) : (
-                                <span className="text-gray-500 italic">Pending</span>
+                                <span className="text-gray-500 italic">
+                                  Pending
+                                </span>
                               )}
                             </td>
                             <td className="px-4 py-2">
                               <div className="flex items-center space-x-2">
-                                <span className="font-mono text-xs">{emp.id}</span>
+                                <span className="font-mono text-xs">
+                                  {emp.id}
+                                </span>
                                 <Button
                                   variant="ghost"
                                   size="icon"
@@ -641,7 +658,9 @@ const loadData = useCallback(async () => {
                             </td>
                             <td className="px-4 py-2">
                               <Badge
-                                variant={emp.is_active ? "success" : "destructive"}
+                                variant={
+                                  emp.is_active ? "success" : "destructive"
+                                }
                               >
                                 {emp.is_active ? "Active" : "Inactive"}
                               </Badge>
@@ -653,7 +672,11 @@ const loadData = useCallback(async () => {
                                 onClick={() => toggleActive(emp.id)}
                                 disabled={loading}
                               >
-                                <Badge variant={emp.is_active ? "destructive" : "success"}>
+                                <Badge
+                                  variant={
+                                    emp.is_active ? "destructive" : "success"
+                                  }
+                                >
                                   {emp.is_active ? "Deactivate" : "Activate"}
                                 </Badge>
                               </Button>

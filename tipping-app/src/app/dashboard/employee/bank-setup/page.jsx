@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, CheckCircle, XCircle, ArrowLeft } from "lucide-react";
 import { Toaster, toast } from "sonner";
-import { apiService } from "@/lib/api";
+import { apiService } from "@/api";
 
 export default function BankSetupPage() {
   const router = useRouter();
@@ -71,7 +71,7 @@ export default function BankSetupPage() {
     };
 
     try {
-      const result = await apiService.setBankInfo(bankData);
+      const result = await apiService.completeBankInfo(bankData);
 
       setSuccessMessage("Bank account set up successfully!");
       toast.success("Bank account configured successfully!");

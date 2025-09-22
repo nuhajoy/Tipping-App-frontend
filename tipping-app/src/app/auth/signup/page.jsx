@@ -15,7 +15,8 @@ export default function Signup() {
   const rightPanelRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+  const apiUrl =
+    process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api";
 
   const [categories, setCategories] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
@@ -38,7 +39,6 @@ export default function Signup() {
     confirmPassword: "",
   });
 
-  
   useEffect(() => {
     axios
       .get(`${apiUrl}/categories`, { responseType: "text" })
@@ -56,12 +56,13 @@ export default function Signup() {
       })
       .catch((err) => {
         console.error("Failed to fetch categories:", err);
-        setCategoriesError("Unable to load categories. Please try again later.");
+        setCategoriesError(
+          "Unable to load categories. Please try again later."
+        );
       })
       .finally(() => setCategoriesLoading(false));
   }, []);
 
-  
   useEffect(() => {
     const updateHeight = () => {
       if (rightPanelRef.current) {
@@ -177,7 +178,7 @@ export default function Signup() {
         password: "",
         confirmPassword: "",
       });
-      router.push("/auth/verify");
+      router.push("/auth/verify?type=provider");
     } catch (err) {
       console.error(err);
       const fallback =
@@ -240,7 +241,9 @@ export default function Signup() {
           >
             1
           </div>
-          <div className={`w-8 h-0.5 ${step > 1 ? "bg-accent" : "bg-gray-300"}`} />
+          <div
+            className={`w-8 h-0.5 ${step > 1 ? "bg-accent" : "bg-gray-300"}`}
+          />
           <div
             className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium ${
               step >= 2 ? "bg-accent text-white" : "bg-gray-300 text-black"
@@ -254,7 +257,9 @@ export default function Signup() {
           <form className="space-y-2" onSubmit={(e) => e.preventDefault()}>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
-                <label className="block font-medium text-black">Business Name *</label>
+                <label className="block font-medium text-black">
+                  Business Name *
+                </label>
                 <input
                   name="businessName"
                   value={signupData.businessName || ""}
@@ -266,7 +271,9 @@ export default function Signup() {
               </div>
 
               <div>
-                <label className="block font-medium text-black">Business Type *</label>
+                <label className="block font-medium text-black">
+                  Business Type *
+                </label>
                 <select
                   name="businessType"
                   value={signupData.businessType || ""}
@@ -291,7 +298,9 @@ export default function Signup() {
               </div>
 
               <div>
-                <label className="block font-medium text-black">Business Email *</label>
+                <label className="block font-medium text-black">
+                  Business Email *
+                </label>
                 <input
                   name="businessEmail"
                   type="email"
@@ -304,7 +313,9 @@ export default function Signup() {
               </div>
 
               <div>
-                <label className="block font-medium text-black">Business Phone *</label>
+                <label className="block font-medium text-black">
+                  Business Phone *
+                </label>
                 <input
                   name="businessPhone"
                   value={signupData.businessPhone || ""}
@@ -316,7 +327,9 @@ export default function Signup() {
               </div>
 
               <div>
-                <label className="block font-medium text-black">Business Address *</label>
+                <label className="block font-medium text-black">
+                  Business Address *
+                </label>
                 <input
                   name="businessAddress"
                   value={signupData.businessAddress || ""}
@@ -364,7 +377,9 @@ export default function Signup() {
               </div>
 
               <div className="sm:col-span-2">
-                <label className="block font-medium text-black">Description *</label>
+                <label className="block font-medium text-black">
+                  Description *
+                </label>
                 <textarea
                   name="businessDescription"
                   value={signupData.businessDescription || ""}
@@ -377,7 +392,9 @@ export default function Signup() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:col-span-2">
                 <div>
-                  <label className="block font-medium text-black">Logo Image URL</label>
+                  <label className="block font-medium text-black">
+                    Logo Image URL
+                  </label>
                   <input
                     name="imageUrl"
                     type="url"
@@ -388,7 +405,7 @@ export default function Signup() {
                   />
                 </div>
 
-                <div>
+               <div>
                   <label className="block font-medium text-black">License image *</label>
                   <div className="relative">
                     <input
@@ -410,12 +427,17 @@ export default function Signup() {
                       required
                     />
                   </div>
-                </div>
+                  </div>
               </div>
             </div>
 
             <div className="flex justify-between mt-4 gap-2">
-              <button disabled className="bg-gray-300 text-white px-4 py-2 rounded">Previous</button>
+              <button
+                disabled
+                className="bg-gray-300 text-white px-4 py-2 rounded"
+              >
+                Previous
+              </button>
               <button
                 type="button"
                 onClick={handleNextStep}
@@ -442,12 +464,16 @@ export default function Signup() {
                 required
               />
               {signupData.password && signupData.password.length < 8 && (
-                <p className="text-red-600 text-sm">Password must be at least 8 characters</p>
+                <p className="text-red-600 text-sm">
+                  Password must be at least 8 characters
+                </p>
               )}
             </div>
 
             <div>
-              <label className="block font-medium text-black">Confirm Password *</label>
+              <label className="block font-medium text-black">
+                Confirm Password *
+              </label>
               <input
                 name="confirmPassword"
                 type="password"
@@ -474,7 +500,9 @@ export default function Signup() {
               <button
                 type="submit"
                 disabled={loading}
-                className={`text-white px-4 py-2 rounded ${loading ? "bg-gray-400" : "bg-accent hover:bg-secondary"}`}
+                className={`text-white px-4 py-2 rounded ${
+                  loading ? "bg-gray-400" : "bg-accent hover:bg-secondary"
+                }`}
               >
                 {loading ? "Submitting..." : "Submit"}
               </button>
