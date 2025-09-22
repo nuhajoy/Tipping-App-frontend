@@ -35,6 +35,11 @@ export default function EmployeeDashboard() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
+    const role = localStorage.getItem("user_role");
+    if (role !== "employee") {
+      router.push("/auth/login");
+      return;
+    }
     loadDashboard();
   }, []);
 
@@ -42,16 +47,13 @@ export default function EmployeeDashboard() {
     try {
       setLoading(true);
 
-      // Fetch profile
       const profileRes = await apiService.getEmployeeProfile();
       setProfile(profileRes.data || profileRes);
 
-      // Fetch transactions
       const txRes = await apiService.request("/employees/transactions");
       const txArray = Array.isArray(txRes.data) ? txRes.data : [];
       setTransactions(txArray);
 
-      // Fetch bank info
       const bankRes = await apiService.getBankAccount();
       setBankInfo(bankRes.data || bankRes || null);
     } catch (err) {
@@ -77,6 +79,14 @@ export default function EmployeeDashboard() {
       setTimeout(() => setCopied(false), 2000);
     }
   };
+
+  const monthlyTotal = transactions
+    .filter((t) => {
+      const d = new Date(t.created_at);
+      const now = new Date();
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    })
+    .reduce((sum, t) => sum + parseFloat(t.amount), 0);
 
   if (loading)
     return (
@@ -148,18 +158,7 @@ export default function EmployeeDashboard() {
                 <TrendingUp className="h-4 w-4" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
-                  {
-                    transactions.filter((t) => {
-                      const d = new Date(t.created_at);
-                      const now = new Date();
-                      return (
-                        d.getMonth() === now.getMonth() &&
-                        d.getFullYear() === now.getFullYear()
-                      );
-                    }).length
-                  }
-                </div>
+                <div className="text-2xl font-bold">{monthlyTotal} ETB</div>
               </CardContent>
             </Card>
 
@@ -225,36 +224,23 @@ export default function EmployeeDashboard() {
                 <CardTitle>Profile Info</CardTitle>
               </CardHeader>
               <CardContent>
-                <p>
-                  <strong>First Name:</strong> {profile.first_name}
-                </p>
-                <p>
-                  <strong>Last Name:</strong> {profile.last_name}
-                </p>
-                <p>
-                  <strong>Email:</strong> {profile.email}
-                </p>
-                <p>
-                  <strong>Tip Code:</strong> {profile.tip_code}
-                </p>
-                <p>
-                  <strong>Status:</strong>
-                  <Badge
-                    variant={profile.is_active ? "default" : "secondary"}
-                    className="ml-2"
-                  >
+                <p><strong>First Name:</strong> {profile.first_name}</p>
+                <p><strong>Last Name:</strong> {profile.last_name}</p>
+                <p><strong>Email:</strong> {profile.email}</p>
+                <p><strong>Tip Code:</strong> {profile.tip_code}</p>
+                <p><strong>Status:</strong>
+                  <Badge variant={profile.is_active ? "default" : "secondary"} className="ml-2">
                     {profile.is_active ? "Active" : "Inactive"}
                   </Badge>
-                  <Badge
-                    variant={profile.is_verified ? "default" : "destructive"}
-                    className="ml-2"
-                  >
+                  <Badge variant={profile.is_verified ? "default" : "destructive"} className="ml-2">
                     {profile.is_verified ? "Verified" : "Unverified"}
                   </Badge>
                 </p>
               </CardContent>
             </Card>
           </TabsContent>
+
+        
 
           {/* Bank */}
           <TabsContent value="bank" className="space-y-4 mt-4">
